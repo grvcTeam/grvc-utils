@@ -74,14 +74,21 @@ class LeicaThread(Thread):
 				print "Server set as disconnected, returning to listening state"
 				self.listen()
 			else:
-				index = data.index('}')
-				parseData = data[1:index]
+				# Parse input data
+				index_init = data.index('{')
+				data = data[index_init:]
+				index_end = data.index('}')
+				parseData = data[1:index_end]
 				parseData = parseData.split(";")
-				try:
-					self.mLastX, self.mLastY, self.mLastZ, t = float(parseData[0]), float(
-						parseData[1]), float(parseData[2]), float(parseData[3])
-				except IndexError:
-					print "Captured index error while parsing input data from socket. Skipping data"
+				# Write log
+				# sys.stdout = open('TS2PX4_log.txt','awt')
+				if len(data) >= 37:
+					try:
+						# print parseData
+						self.mLastX, self.mLastY, self.mLastZ, t = float(parseData[0]), float([1]), float(parseData[2]), float(parseData[3])
+						# print "--------"
+					except IndexError:
+						print "Captured index error while parsing input data from socket. Skipping data"
 
 
 def talker(topic):
@@ -97,7 +104,7 @@ def talker(topic):
 	TCP_PORT = 8000
 	leicaThread = LeicaThread(TCP_IP, TCP_PORT)
 	leicaThread.start()
-	
+
 	def signalHandler(signum, frame):
 		leicaThread.stop()
 		print "Exiting"
@@ -121,7 +128,7 @@ def talker(topic):
 
 	# Publishing loop
 	while ((not rospy.is_shutdown()) and leicaThread.isRunning()):
-		# Delete last line 
+		# Delete last line
 		sys.stdout.write("\033[F") #back to previous line
 		sys.stdout.write("\033[K") #clear line
 		delay = time.time() - leicaThread.mLastTime
