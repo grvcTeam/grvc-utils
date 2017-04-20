@@ -20,7 +20,7 @@
 //----------------------------------------------------------------------------------------------------------------------
 #include <iostream>
 #include <cassert>
-#include "argument_parser/argument_parser.h"
+#include <argument_parser/argument_parser.h>
 
 using namespace grvc::utils;
 
@@ -51,8 +51,13 @@ int main(int, char**) {
 
     ArgumentParser options(argcTest, argvTest);
 
+    // Return type might be implicit in default value...
     std::string s = options.getArgument("foo_s", std::string("default"));
     //std::cout << "Arg [foo_s] = [" << s << "]" << std::endl;
+    assert(s == "tras");
+
+    // ...or template-explicit
+    s = options.getArgument<std::string>("foo_s", "default");
     assert(s == "tras");
 
     int i = options.getArgument("foo_i", 33);
