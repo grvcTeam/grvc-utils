@@ -18,31 +18,22 @@
 // OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
 // OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //----------------------------------------------------------------------------------------------------------------------
-#include <ros/ros.h>
-#include <gazebo_animator/frame.h>
-#include <gazebo_animator/key_frame.h>
-#include <gazebo_animator/gazebo_animated_link.h>
+#ifndef GAZEBO_ANIMATOR_FRAME_H
+#define GAZEBO_ANIMATOR_FRAME_H
 
-using grvc::utils::Frame;
-using grvc::utils::KeyFrame;
-using grvc::utils::GazeboAnimatedLink;
+#include <geometry_msgs/Point.h>
 
-int main(int _argc, char** _argv) {
-    ros::init(_argc, _argv, "gazebo_move");
-    ROS_INFO("Starting gazebo_move");
-    // WATCHOUT: Yellow misspelled!
-    GazeboAnimatedLink yellow("Yelow cylinder object::grab_here");
-    // TODO: Trajectory from argument/file
-    yellow.addKeyFrame(KeyFrame(Frame(0.0, 0.0, 0.0), ros::Time(0.0)));
-    yellow.addKeyFrame(KeyFrame(Frame(9.0, 0.0, 0.0), ros::Time(10.0)));
-    yellow.addKeyFrame(KeyFrame(Frame(0.0, 0.0, 0.0), ros::Time(20.0)));
-    //yellow.playOnce();
-    yellow.playLoop();
-    char input = 'a';
-    while (input != 'q') {
-        std::cout << "Enter q to quit" << std::endl;
-        std::cin >> input;
-    }
-    yellow.stop();
-    return 0;
-}
+namespace grvc { namespace utils {
+
+struct Frame {
+    Frame(double _x, double _y, double _z) {
+        position.x = _x;
+        position.y = _y;
+        position.z = _z;
+     }
+    geometry_msgs::Point position;
+};
+
+}}  // grvc::utils
+
+#endif  // GAZEBO_ANIMATOR_FRAME_H

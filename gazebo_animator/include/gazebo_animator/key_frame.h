@@ -18,31 +18,35 @@
 // OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
 // OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //----------------------------------------------------------------------------------------------------------------------
+#ifndef GAZEBO_ANIMATOR_KEY_FRAME_H
+#define GAZEBO_ANIMATOR_KEY_FRAME_H
+
 #include <ros/ros.h>
 #include <gazebo_animator/frame.h>
-#include <gazebo_animator/key_frame.h>
-#include <gazebo_animator/gazebo_animated_link.h>
 
-using grvc::utils::Frame;
-using grvc::utils::KeyFrame;
-using grvc::utils::GazeboAnimatedLink;
+namespace grvc { namespace utils {
 
-int main(int _argc, char** _argv) {
-    ros::init(_argc, _argv, "gazebo_move");
-    ROS_INFO("Starting gazebo_move");
-    // WATCHOUT: Yellow misspelled!
-    GazeboAnimatedLink yellow("Yelow cylinder object::grab_here");
-    // TODO: Trajectory from argument/file
-    yellow.addKeyFrame(KeyFrame(Frame(0.0, 0.0, 0.0), ros::Time(0.0)));
-    yellow.addKeyFrame(KeyFrame(Frame(9.0, 0.0, 0.0), ros::Time(10.0)));
-    yellow.addKeyFrame(KeyFrame(Frame(0.0, 0.0, 0.0), ros::Time(20.0)));
-    //yellow.playOnce();
-    yellow.playLoop();
-    char input = 'a';
-    while (input != 'q') {
-        std::cout << "Enter q to quit" << std::endl;
-        std::cin >> input;
+struct KeyFrame {
+    KeyFrame(Frame _frame, ros::Time _time): frame(_frame) {
+        time = _time;
     }
-    yellow.stop();
-    return 0;
-}
+    Frame frame;
+    ros::Time time;
+ 
+    bool operator<(const KeyFrame& _key) { return time < _key.time; }
+ 
+    static Frame interpolate(const KeyFrame& _prev, const KeyFrame& _next, const ros::Duration& _elapsed) {
+        double t_prev = _prev.time.toSec();
+        double t_next = _next.time.toSec();
+        double t_curr = _elapsed.toSec();
+        double t = (t_curr - t_prev) / (t_next - t_prev);
+        double x = (1.0 - t) * _prev.frame.position.x + t * _next.frame.position.x;
+        double y = (1.0 - t) * _prev.frame.position.y + t * _next.frame.position.y;
+        double z = (1.0 - t) * _prev.frame.position.z + t * _next.frame.position.z;
+        return Frame(x, y, z);
+    }
+};
+
+}}  // grvc::utils
+
+#endif  // GAZEBO_ANIMATOR_KEY_FRAME_H
