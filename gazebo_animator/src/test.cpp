@@ -22,27 +22,37 @@
 #include <gazebo_animator/frame.h>
 #include <gazebo_animator/key_frame.h>
 #include <gazebo_animator/gazebo_animated_link.h>
+#include <argument_parser/argument_parser.h>
 
 using grvc::utils::Frame;
 using grvc::utils::KeyFrame;
 using grvc::utils::GazeboAnimatedLink;
+using grvc::utils::ArgumentParser;
 
 int main(int _argc, char** _argv) {
-    ros::init(_argc, _argv, "gazebo_move");
-    ROS_INFO("Starting gazebo_move");
-    // WATCHOUT: Yellow misspelled!
-    GazeboAnimatedLink yellow("Yelow cylinder object::grab_here");
-    // TODO: Trajectory from argument/file
-    yellow.addKeyFrame(KeyFrame(Frame(0.0, 0.0, 0.0), ros::Time(0.0)));
-    yellow.addKeyFrame(KeyFrame(Frame(9.0, 0.0, 0.0), ros::Time(10.0)));
-    yellow.addKeyFrame(KeyFrame(Frame(0.0, 0.0, 0.0), ros::Time(20.0)));
-    //yellow.playOnce();
-    yellow.playLoop();
-    char input = 'a';
-    while (input != 'q') {
-        std::cout << "Enter q to quit" << std::endl;
-        std::cin >> input;
-    }
-    yellow.stop();
+    ros::init(_argc, _argv, "gazebo_animator_test");
+    ROS_INFO("Starting gazebo_animator_test");
+
+    ArgumentParser options(_argc, _argv);
+    std::string link_name = options.getArgument("link_name", std::string("yellow_cylinder::sample_link"));
+    GazeboAnimatedLink link(link_name);
+    // Define trajectory key frames (TODO: from file?)
+    link.addKeyFrame(KeyFrame(Frame( 0.0,  3.0, 0.0), ros::Time(0.0)));
+    link.addKeyFrame(KeyFrame(Frame( 4.0,  5.0, 0.0), ros::Time(5.0)));
+    link.addKeyFrame(KeyFrame(Frame( 6.0,  1.0, 0.0), ros::Time(10.0)));
+    link.addKeyFrame(KeyFrame(Frame( 0.0, -6.0, 0.0), ros::Time(18.0)));
+    link.addKeyFrame(KeyFrame(Frame(-6.0,  1.0, 0.0), ros::Time(26.0)));
+    link.addKeyFrame(KeyFrame(Frame(-4.0,  5.0, 0.0), ros::Time(31.0)));
+    link.addKeyFrame(KeyFrame(Frame( 0.0,  3.0, 0.0), ros::Time(36.0)));
+
+    // Animate link!
+    //link.playOnce();
+    link.playLoop();
+
+    // Wait here somehow...
+    ros::spin();  // Not really needed, just loop until ctrl+C
+
+    // Stop link
+    link.stop();
     return 0;
 }

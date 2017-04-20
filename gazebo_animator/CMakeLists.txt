@@ -11,6 +11,7 @@ find_package(catkin REQUIRED COMPONENTS
   gazebo_msgs
   geometry_msgs
   roscpp
+  argument_parser
 )
 
 ## System dependencies are found with CMake's conventions
