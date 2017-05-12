@@ -41,14 +41,25 @@ public:
     template<typename T_>
     T_ getArgument(const std::string& _label, const T_& _defaultValue) const;
 
+    /// Set value to argument, add to (or modify) inner map, not argc_/argv_
+    /// \param _label identifer of argument, e.g: "-foo"
+    /// \param _value as a string
+    void setArgument(const std::string& _label, const std::string& _value);
+
+    /// Get argc as passed into constructor
+    int& argc() { return argc_; }
+
+    /// Get argv as passed into constructor
+    char** argv() { return argv_; }
+
 private:
     /// All provided arguments stored by label
     std::map<std::string, std::string> labelToValueMap_;
+    /// Cached argc, argv
+    int argc_;
+    char** argv_;
 };
 
-//----------------------------------------------------------------------------------------------------------------------
-// Inline implementation
-//----------------------------------------------------------------------------------------------------------------------
 inline ArgumentParser::ArgumentParser (int _argc, char** _argv) {
     // Considering that, in order to be parsable by this class:
     // 1. Label must start with '-'
@@ -62,9 +73,15 @@ inline ArgumentParser::ArgumentParser (int _argc, char** _argv) {
             //std::cout << arg.substr(1, valuepos-1) << "=" << arg.substr(valuepos+1) << std::endl;
         }
     }
+    // Keep argc and argv
+    argc_ = _argc;
+    argv_ = _argv;  // Trust argv scope is main scope!
 }
 
-//----------------------------------------------------------------------------------------------------------------------
+inline void ArgumentParser::setArgument(const std::string& _label, const std::string& _value) {
+    labelToValueMap_[_label] = _value;
+}
+
 template<class T_>
 T_ ArgumentParser::getArgument(const std::string& _label, const T_& _defaultValue) const {
     if(labelToValueMap_.count(_label) > 0) {

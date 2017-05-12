@@ -27,12 +27,13 @@ using namespace grvc::utils;
 // Custom class
 struct MyStruct {
     MyStruct() {}  // Required by ArgumentParser::getArgument
-    MyStruct(int i): parser(i) {}
-    int parser = 0;
+    MyStruct(int i): flag(i) {}
+    int flag = 0;
 };
 
+// Must define operator >> to parse class from arguments
 inline std::istream& operator >> (std::istream& _is, MyStruct& _s) {
-    _s.parser = 1;
+    _s.flag = 1;
     return _is;
 }
 
@@ -51,9 +52,16 @@ int main(int, char**) {
 
     ArgumentParser options(argcTest, argvTest);
 
+    // Provided argc and argv are cached for further use
+    std::cout << "Print cached arguments:" << std::endl;
+    for (int i = 0; i < options.argc(); i++) {
+        printf("argv[%d] = %s\n", i, options.argv()[i]);
+    }
+
+    std::cout << "Test argument parsing:" << std::endl;
     // Return type might be implicit in default value...
     std::string s = options.getArgument("foo_s", std::string("default"));
-    //std::cout << "Arg [foo_s] = [" << s << "]" << std::endl;
+    std::cout << "Arg [foo_s] = [" << s << "]" << std::endl;
     assert(s == "tras");
 
     // ...or template-explicit
@@ -61,21 +69,27 @@ int main(int, char**) {
     assert(s == "tras");
 
     int i = options.getArgument("foo_i", 33);
-    //std::cout << "Arg [foo_i] = [" << i << "]" << std::endl;
+    std::cout << "Arg [foo_i] = [" << i << "]" << std::endl;
     assert(i == 42);
 
     double d = options.getArgument("foo_d", 2.72);
-    //std::cout << "Arg [foo_d] = [" << d << "]" << std::endl;
+    std::cout << "Arg [foo_d] = [" << d << "]" << std::endl;
     assert(d == 3.14);
 
     std::string t = options.getArgument("not-provided", std::string("default-value"));
-    //std::cout << "Arg [not-provided] = [" << t << "]" << std::endl;
+    std::cout << "Arg [not-provided] = [" << t << "]" << std::endl;
     assert(t == "default-value");
 
     MyStruct m = options.getArgument("mystruct", MyStruct(2));
-    //std::cout << m.parser << std::endl;
-    assert(m.parser==1);
+    std::cout << "Arg [mystruct].flag = " << m.flag << std::endl;
+    assert(m.flag==1);
 
-    std::cout << "Test passed!"  << std::endl;
+    std::cout << "Test to add an argument:" << std::endl;
+    options.setArgument("add-an-argument", "done!");
+    s = options.getArgument<std::string>("add-an-argument", ":(");
+    std::cout << "Arg [add-an-argument] = [" << s << "]" << std::endl;
+    assert(s == "done!");
+
+    std::cout << "Tests passed!"  << std::endl;
     return 0;
 }
