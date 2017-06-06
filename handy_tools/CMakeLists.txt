@@ -2,12 +2,18 @@ cmake_minimum_required(VERSION 2.8.3)
 project(handy_tools)
 
 ## Add support for C++11, supported in ROS Kinetic and newer
-# add_definitions(-std=c++11)
+add_definitions(-std=c++11)
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
-find_package(catkin REQUIRED)
+find_package(catkin REQUIRED
+  geometry_msgs
+  roscpp
+  std_msgs
+  tf2_ros
+  tf2_kdl
+)
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
@@ -101,7 +107,7 @@ find_package(catkin REQUIRED)
 catkin_package(
  INCLUDE_DIRS include
 #  LIBRARIES handy_tools
-#  CATKIN_DEPENDS other_catkin_pkg
+ CATKIN_DEPENDS geometry_msgs roscpp std_msgs tf2_ros tf2_kdl
 #  DEPENDS system_lib
 )
 
@@ -111,7 +117,10 @@ catkin_package(
 
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
-# include_directories(include)
+include_directories(include)
+include_directories(
+  ${catkin_INCLUDE_DIRS}
+)
 
 ## Declare a C++ library
 # add_library(${PROJECT_NAME}
@@ -126,7 +135,7 @@ catkin_package(
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-# add_executable(${PROJECT_NAME}_node src/handy_tools_node.cpp)
+add_executable(test_special_zone src/test_special_zone.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -142,6 +151,9 @@ catkin_package(
 # target_link_libraries(${PROJECT_NAME}_node
 #   ${catkin_LIBRARIES}
 # )
+target_link_libraries(test_special_zone
+  ${catkin_LIBRARIES}
+)
 
 #############
 ## Install ##
