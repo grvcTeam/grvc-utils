@@ -30,8 +30,8 @@ using grvc::utils::GazeboAnimatedLink;
 using grvc::utils::ArgumentParser;
 
 int main(int _argc, char** _argv) {
-    ros::init(_argc, _argv, "gazebo_animator_test");
-    ROS_INFO("Starting gazebo_animator_test");
+    ros::init(_argc, _argv, "test_gazebo_animator");
+    ROS_INFO("Starting test_gazebo_animator");
 
     ArgumentParser options(_argc, _argv);
     std::string link_name = options.getArgument("link_name", std::string("yellow_cylinder::sample_link"));
