@@ -61,11 +61,22 @@ class special_zone {
                 test_point = _point.point;
             }
             else {
-                tf2_ros::Buffer tfBuffer;
-                tf2_ros::TransformListener tfListener(tfBuffer);
                 geometry_msgs::TransformStamped transformToZoneFrame;
+
+                if ( cached_transforms_.find(point_frame_id) == cached_transforms_.end() ) {
+                    // point_frame_id not found in cached_transforms_
+                    tf2_ros::Buffer tfBuffer;
+                    tf2_ros::TransformListener tfListener(tfBuffer);
+                    transformToZoneFrame = tfBuffer.lookupTransform(frame_id_, point_frame_id, ros::Time(0), ros::Duration(1.0));
+                    cached_transforms_[point_frame_id] = transformToZoneFrame; // Save transform in cache
+                    ROS_INFO("Cached transform %s",point_frame_id.c_str());
+                } else {
+                    // found in cache
+                    transformToZoneFrame = cached_transforms_[point_frame_id];
+                    ROS_INFO("Found cached transform %s",point_frame_id.c_str());
+                }
+
                 geometry_msgs::PointStamped aux_point;
-                transformToZoneFrame = tfBuffer.lookupTransform(frame_id_, point_frame_id, ros::Time(0), ros::Duration(0.2));
                 tf2::doTransform(_point, aux_point, transformToZoneFrame);
                 test_point = aux_point.point;
             }
@@ -84,6 +95,7 @@ class special_zone {
     private:
         std::string frame_id_;
         std::vector<geometry_msgs::Point> vertices_;
+        std::map <std::string, geometry_msgs::TransformStamped> cached_transforms_;
 };
 
 }} // namespace grvc::utils
