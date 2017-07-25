@@ -69,11 +69,9 @@ class special_zone {
                     tf2_ros::TransformListener tfListener(tfBuffer);
                     transformToZoneFrame = tfBuffer.lookupTransform(frame_id_, point_frame_id, ros::Time(0), ros::Duration(1.0));
                     cached_transforms_[point_frame_id] = transformToZoneFrame; // Save transform in cache
-                    ROS_INFO("Cached transform %s",point_frame_id.c_str());
                 } else {
                     // found in cache
                     transformToZoneFrame = cached_transforms_[point_frame_id];
-                    ROS_INFO("Found cached transform %s",point_frame_id.c_str());
                 }
 
                 geometry_msgs::PointStamped aux_point;
