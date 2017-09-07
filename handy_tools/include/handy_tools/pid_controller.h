@@ -33,7 +33,7 @@ public:
         k_p_ = _k_p;
         k_i_ = _k_i;
         k_d_ = _k_d;
-        printf("Created PidController %s with gains: [%f, %f, %f]", name_.c_str(), k_p_, k_i_, k_d_);
+        // printf("Created PidController %s with gains: [%f, %f, %f]\n", name_.c_str(), k_p_, k_i_, k_d_);
     }
 
     double control_signal(double _error, double _dt) {
