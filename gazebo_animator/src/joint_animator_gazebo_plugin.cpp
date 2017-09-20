@@ -38,12 +38,12 @@ void JointAnimatorGazeboPlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _
         this->topic_name_ = _sdf->GetElement("topicName")->GetValue()->GetAsString();
     }
 
-    if (!_sdf->HasElement("updateRate")) {
-        ROS_INFO("joint animator plugin missing <updateRate>, defaults to 0.0 (as fast as possible)");
-        this->update_rate_ = 0;
-    } else {
-        _sdf->GetElement("updateRate")->GetValue()->Get(this->update_rate_);
-    }
+    // if (!_sdf->HasElement("updateRate")) {
+    //     ROS_INFO("joint animator plugin missing <updateRate>, defaults to 0.0 (as fast as possible)");
+    //     this->update_rate_ = 0;
+    // } else {
+    //     _sdf->GetElement("updateRate")->GetValue()->Get(this->update_rate_);
+    // }
 
     if (!ros::isInitialized()) {
         int argc = 0;
@@ -53,10 +53,6 @@ void JointAnimatorGazeboPlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _
     }
 
     this->rosnode_ = new ros::NodeHandle(this->robot_namespace_);
-
-    // resolve tf prefix
-    std::string prefix;
-    this->rosnode_->getParam(std::string("tf_prefix"), prefix);
 
     if (this->topic_name_ != "") {
         ros::SubscribeOptions joint_state_so = ros::SubscribeOptions::create<sensor_msgs::JointState>(
@@ -78,10 +74,6 @@ void JointAnimatorGazeboPlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _
 
 void JointAnimatorGazeboPlugin::SetJointState(const sensor_msgs::JointState::ConstPtr& _joint_state) {
     boost::mutex::scoped_lock lock(this->update_mutex);
-
-    // resume physics update
-    this->world_->EnablePhysicsEngine(this->physics_engine_enabled_);
-
     // copy joint configuration into a map
     unsigned int chain_size = _joint_state->name.size();
     this->joints_.resize(chain_size);
@@ -90,26 +82,18 @@ void JointAnimatorGazeboPlugin::SetJointState(const sensor_msgs::JointState::Con
         this->joints_[i] = this->model_->GetJoint(_joint_state->name[i]);
         this->positions_[i] = _joint_state->position[i];
     }
+}
+
+
+void JointAnimatorGazeboPlugin::UpdateStates() {
+    boost::mutex::scoped_lock lock(this->update_mutex);
+    common::Time cur_time = this->world_->GetSimTime();
 
     if (this->disable_physics_updates_) {
         this->physics_engine_enabled_ = this->world_->GetEnablePhysicsEngine();
         this->world_->EnablePhysicsEngine(false);
     }
-}
 
-
-void JointAnimatorGazeboPlugin::UpdateStates() {
-
-    boost::mutex::scoped_lock lock(this->update_mutex);
-    common::Time cur_time = this->world_->GetSimTime();
-
-    // get reference link pose before updates
-    math::Pose reference_pose = this->model_->GetWorldPose();
-    if (this->reference_link_) {
-        reference_pose = this->reference_link_->GetWorldPose();
-    }
-
-    // trajectory roll-out based on time:  set model configuration from trajectory message
     for (unsigned int i = 0; i < this->joints_.size(); ++i) {
         // this is not the most efficient way to set things
         if (this->joints_[i]) {
@@ -117,21 +101,12 @@ void JointAnimatorGazeboPlugin::UpdateStates() {
         }
     }
 
-    // set model pose
-    if (this->reference_link_) {
-        this->model_->SetLinkWorldPose(reference_pose, this->reference_link_);
-    } else {
-        this->model_->SetWorldPose(reference_pose);
-    }
-
     // save last update time stamp
     this->last_time_ = cur_time;
 
-    // trajectory finished
-    this->reference_link_.reset();
-    // this->has_trajectory_ = false;
-    if (this->disable_physics_updates_)
-    this->world_->EnablePhysicsEngine(this->physics_engine_enabled_);
+    if (this->disable_physics_updates_) {
+        this->world_->EnablePhysicsEngine(this->physics_engine_enabled_);
+    }
 }
 
 void JointAnimatorGazeboPlugin::QueueThread() {
