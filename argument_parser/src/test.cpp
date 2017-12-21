@@ -91,5 +91,8 @@ int main(int, char**) {
     assert(s == "done!");
 
     std::cout << "Tests passed!"  << std::endl;
+
+    std::cout << "Print finally parsed arguments:" << std::endl;
+    options.printArguments();
     return 0;
 }

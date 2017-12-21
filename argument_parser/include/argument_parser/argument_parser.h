@@ -23,6 +23,7 @@
 
 #include <string>
 #include <sstream>
+#include <iostream>
 #include <map>
 
 namespace grvc { namespace utils {
@@ -34,6 +35,9 @@ public:
     /// \param _argc number of command line arguments
     /// \param _argv array of command line arguments
     ArgumentParser(int _argc, char** _argv);
+
+    /// Print parsed arguments
+    void printArguments();
 
     /// Get a parsed argument, template
     /// \param _label identifer of requested argument, e.g: "-foo"
@@ -76,6 +80,12 @@ inline ArgumentParser::ArgumentParser (int _argc, char** _argv) {
     // Keep argc and argv
     argc_ = _argc;
     argv_ = _argv;  // Trust argv scope is main scope!
+}
+
+inline void ArgumentParser::printArguments() {
+    for (auto it = labelToValueMap_.begin(); it != labelToValueMap_.end(); ++it) {
+        std::cout << "[" << it->first << "] = [" << it->second << "]" << std::endl;
+    }
 }
 
 inline void ArgumentParser::setArgument(const std::string& _label, const std::string& _value) {
