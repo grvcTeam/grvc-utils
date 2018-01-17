@@ -2,82 +2,108 @@
 # license removed for brevity
 import rospy, tf, socket
 from geometry_msgs.msg import PoseStamped
+from threading import Thread
 from math import *
+import signal
+import sys
+import time
 
-def py_trans2global(x,y,z,lat0,lon0,h0,Az0):
-    import numpy as np
+class LeicaThread(Thread):	
+	cBufferSize = 1024
 
-    Re = 6378
-    e  = 3.352 * (10 ** -3)
+	def __init__(self, _ip, _port):
+		Thread.__init__(self)
+		self.mLastX = 0;
+		self.mLastY = 0;
+		self.mLastZ = 0;	
+		self.mRefX = 0;
+		self.mRefY = 0;
+		self.mRefZ = 0;		
+		self.mSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+		self.mSocket.bind((_ip, _port))
+		self.mIsconnected = False
+		self.mRun = True
+		self.mState = 0;	# 0 all good; 1 disconnected; 2 listening; 3 data time out;4 unknown state
 
-    lat0 = lat0 * pi / 180
-    lon0 = lon0 * pi / 180
+	def _del_(self):
+		self.mRun = False
+		self.mConn.close()
+		self.mSocket.close()
 
-    coslat0 = cos(lat0)
-    sinlat0 = sin(lat0)
-    den = ( 1 - (e ** 2)  * ( sinlat0 ** 2 ) )
-    Rm = Re * ( 1 - e ** 2 ) / ( den ** (3 / 2) )
-    Rn = Re / sqrt(den)
+	def listen(self):
+		self.mState = 2
+		self.mSocket.listen(1)
+		try:
+			self.mConn, self.mAddr = self.mSocket.accept()
+	    		rospy.loginfo('Connection address: %s', self.mAddr)
+			self.mIsconnected = True;
+		except socket.error as msg:
+			self.mState = 1
 
-    M = np.array([cos(Az0), -sin(Az0), 0, sin(Az0), cos(Az0), 0, 0, 0, 1]).reshape(3,3)
-    pos_local = np.array([x, y, z]).reshape(3,1)
-    pos_global = np.dot(M,pos_local)
-    xn = pos_global[0,0]
-    yn = pos_global[1,0]
-    zn = pos_global[2,0]
 
-    lat = xn / Rm + lat0
-    lon = yn / (Rn * coslat0 ) + lon0
-    h = h0 + zn
+	def run(self):
+		self.mLastTime = time.time()
+		self.listen()
 
-    return floor(lat*1e7), floor(lon*1e7), h
-
+		while (not rospy.is_shutdown()) and self.mRun:
+			data = self.mConn.recv(LeicaThread.cBufferSize)
+			self.mLastTime = time.time()
+			if not data:
+				print "No data received, disconnected from server as socket has been configured without timeout"
+				self.mState = 1
+				self.mIsconnected = False;
+				print "Server set as disconnected, returning to listening state"
+				self.listen()
+			else:
+				index = data.index('}')
+				parseData = data[1:index]
+				parseData = parseData.split(";")
+				try:
+					self.mLastX, self.mLastY, self.mLastZ, t = float(parseData[0]), float(parseData[1]), float(parseData[2]), float(parseData[3])
+				except IndexError:
+					print "Captured index error while parsing input data from socket. Skipping data"
+	
 
 def talker():
     rospy.init_node('tsbridge', anonymous=True)
 
     output = PoseStamped()
+    
+    # TSReceiver Socket
+
+    pub = rospy.Publisher('/uav_1/mavros/vision_pose/pose', PoseStamped, queue_size=10)
+
     TCP_IP = '0.0.0.0'
     TCP_PORT = 8000
-    BUFFER_SIZE = 1024  # Example {-0.589207,-2.744139,-1.105899,7486517.000000}
+    leicaThread = LeicaThread(TCP_IP, TCP_PORT)
+    leicaThread.start();
+		
+    while not leicaThread.mIsconnected:
+	print "Waiting until leica is connected"
+	time.sleep(1)
 
-    # TSReceiver Socket
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    s.bind((TCP_IP, TCP_PORT))
-    s.listen(1)
-
-    conn, addr = s.accept()
-    rospy.loginfo('Connection address: %s', addr)
-
-    pub = rospy.Publisher('mavros/mocap/pose', PoseStamped, queue_size=10)
-
-    rate = rospy.Rate(1) # 10hz
+    rate = rospy.Rate(30) # 10hz
+    cMaxTimeOut = 2.0;
     while not rospy.is_shutdown():
+	
+	if time.time() - leicaThread.mLastTime > cMaxTimeOut: # check timeout
+		print "WARNING! exceeded timeout of last received measure"
 
-        data = conn.recv(BUFFER_SIZE)
-        print data    # Debug input
-        index = data.index('}')
-        parseData = data[1:index]
-        parseData = parseData.split(";")
-        x,y,z,t = float(parseData[0]), float(parseData[1]), float(parseData[2]), float(parseData[3])
-
-        output.pose.position.x = x
-        output.pose.position.y = y
-        output.pose.position.z = z
+	output.header.stamp = rospy.Time.now()
+    	output.header.frame_id = "fcu"
+  
+        output.pose.position.x = leicaThread.mLastX
+        output.pose.position.y = leicaThread.mLastY
+        output.pose.position.z = leicaThread.mLastZ
 
         output.pose.orientation.x = 0
         output.pose.orientation.y = 0
         output.pose.orientation.z = 0
         output.pose.orientation.w = 1
 
-        # lat, lon, h = py_trans2global(x,y,z,0,0,0,0)
-        # print "%s %d %d %f %d" % (topic, lat, lon, h, t) # Debug output
-        print "%f %f %f" % (x, y, z) # Debug output
 
         pub.publish(output)
-        # rate.sleep()
-
-    conn.close()
+        rate.sleep()
 
 if __name__ == '__main__':
     try:
