@@ -5,9 +5,10 @@ from gazebo_msgs.msg import LinkStates
 from geometry_msgs.msg import PoseStamped
 
 class PoseRepublisher:
-    def __init__(self, link_name, topic):
+    def __init__(self, link_name, topic, only_position = True):
         self.link_name = link_name
         self.pub = rospy.Publisher(topic, PoseStamped, queue_size=1)
+        self.only_position = only_position
 
     def link_states_callback(self, data):
         pose_stamped = PoseStamped()
@@ -15,6 +16,11 @@ class PoseRepublisher:
         pose_stamped.header.frame_id = "fcu"  # TODO: Check!
         link_index = data.name.index(self.link_name)
         pose_stamped.pose = data.pose[link_index]
+        if self.only_position:
+            pose_stamped.pose.orientation.x = 0
+            pose_stamped.pose.orientation.y = 0
+            pose_stamped.pose.orientation.z = 0
+            pose_stamped.pose.orientation.w = 1
         self.pub.publish(pose_stamped)
 
 def main():
@@ -22,7 +28,7 @@ def main():
     parser = argparse.ArgumentParser(description="Republish any link pose from Gazebo simulator")
     parser.add_argument("-link_name", type=str, default="mbzirc_1::base_link",
                         help="name of the link whose pose is wanted, as in gazebo/link_states")
-    parser.add_argument('-topic', type=str, default="gazebo_pose_server",
+    parser.add_argument('-topic', type=str, default="uav_1/mavros/vision_pose/pose",
                         help='name of the topic to republish pose')
     args, unknown = parser.parse_known_args()
     for arg in unknown:
