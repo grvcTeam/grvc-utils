@@ -7,6 +7,7 @@ from math import *
 import signal
 import sys
 import time
+import struct
 
 class LeicaThread(Thread):
 	cBufferSize = 1024
@@ -19,57 +20,40 @@ class LeicaThread(Thread):
 		self.mRefX = 0;
 		self.mRefY = 0;
 		self.mRefZ = 0;
-		self.mSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+		self.mSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 		self.mSocket.bind((_ip, _port))
-		self.mIsconnected = False
+		# self.mIsconnected = False
 		self.mRun = True
-		self.mState = 0;	# 0 all good; 1 disconnected; 2 listening; 3 data time out;4 unknown state
+		# self.mState = 0;	# 0 all good; 1 disconnected; 2 listening; 3 data time out;4 unknown state
 
 	def _del_(self):
 		self.mRun = False
-		self.mConn.close()
+		# self.mConn.close()
 		self.mSocket.close()
-
-	def listen(self):
-		self.mState = 2
-		self.mSocket.listen(1)
-		try:
-			self.mConn, self.mAddr = self.mSocket.accept()
-	    		rospy.loginfo('Connection address: %s', self.mAddr)
-			self.mIsconnected = True;
-		except socket.error as msg:
-			self.mState = 1
-
 
 	def run(self):
 		self.mLastTime = time.time()
-		self.listen()
+		# self.listen()
 
 		while (not rospy.is_shutdown()) and self.mRun:
-			data = self.mConn.recv(LeicaThread.cBufferSize)
+			data = self.mSocket.recvfrom(LeicaThread.cBufferSize)
 			self.mLastTime = time.time()
 			if not data:
 				print "No data received, disconnected from server as socket has been configured without timeout"
-				self.mState = 1
-				self.mIsconnected = False;
+				# self.mState = 1
+				# self.mIsconnected = False;
 				print "Server set as disconnected, returning to listening state"
 				self.listen()
 			else:
-				sys.stdout = open('TS2PX4_log.txt','awt')
-				print data
-				# Parse input data
-				index_init = data.index('{')
-				data = data[index_init:]
-				index_end = data.index('}')
-				parseData = data[1:index_end]
-				parseData = parseData.split(";")
-				if len(data) >= 37:
-					try:
-						print parseData
-						self.mLastX, self.mLastY, self.mLastZ, t = float(parseData[0]), float(parseData[1]), float(parseData[2]), float(parseData[3])
-						print "--------"
-					except IndexError:
-						print "Captured index error while parsing input data from socket. Skipping data"
+				data = struct.unpack('ffff',data[0])
+				# sys.stdout = open('TS2PX4_log.txt','awt')
+				# print data
+				try:
+					# print parseData
+					self.mLastX, self.mLastY, self.mLastZ, t = data[1], data[2], data[3], data[0]
+					# print "--------"
+				except IndexError:
+					print "Captured index error while parsing input data from socket. Skipping data"
 
 
 def talker():
@@ -79,16 +63,16 @@ def talker():
 
     # TSReceiver Socket
 
-    pub = rospy.Publisher('/uav_1/mavros/vision_pose/pose', PoseStamped, queue_size=10)
+    pub = rospy.Publisher('/uav_1/mavros/vision_pose/pose', PoseStamped, queue_size=1)
 
     TCP_IP = '0.0.0.0'
     TCP_PORT = 8000
     leicaThread = LeicaThread(TCP_IP, TCP_PORT)
     leicaThread.start();
 
-    while not leicaThread.mIsconnected:
-	print "Waiting until leica is connected"
-	time.sleep(1)
+    # while not leicaThread.mIsconnected:
+	# print "Waiting until leica is connected"
+	# time.sleep(1)
 
     rate = rospy.Rate(20) # 20hz
     cMaxTimeOut = 2.0;
