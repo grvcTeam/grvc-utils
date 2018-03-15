@@ -10,7 +10,7 @@ import time
 import struct
 
 class LeicaThread(Thread):
-	cBufferSize = 1024
+	cBufferSize = 44
 
 	def __init__(self, _ip, _port):
 		Thread.__init__(self)
@@ -21,7 +21,8 @@ class LeicaThread(Thread):
 		self.mRefY = 0;
 		self.mRefZ = 0;
 		self.mSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-		self.mSocket.bind((_ip, _port))
+		self.mServer = (_ip,_port)
+		# self.mSocket.bind((_ip, _port))
 		# self.mIsconnected = False
 		self.mRun = True
 		# self.mState = 0;	# 0 all good; 1 disconnected; 2 listening; 3 data time out;4 unknown state
@@ -32,6 +33,7 @@ class LeicaThread(Thread):
 		self.mSocket.close()
 
 	def run(self):
+		sent = self.mSocket.sendto("Hola", self.mServer)
 		self.mLastTime = time.time()
 		# self.listen()
 
@@ -65,7 +67,7 @@ def talker():
 
     pub = rospy.Publisher('/uav_1/mavros/vision_pose/pose', PoseStamped, queue_size=1)
 
-    TCP_IP = '0.0.0.0'
+    TCP_IP = '192.168.100.30'
     TCP_PORT = 8000
     leicaThread = LeicaThread(TCP_IP, TCP_PORT)
     leicaThread.start();
