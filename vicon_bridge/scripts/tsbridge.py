@@ -45,7 +45,7 @@ class LeicaThread(Thread):
 				print "Server set as disconnected, returning to listening state"
 				self.listen()
 			else:
-				data = struct.unpack('ffff',data[0])
+				data = struct.unpack('Lfffffffff',data[0])
 				# sys.stdout = open('TS2PX4_log.txt','awt')
 				# print data
 				try:
@@ -84,9 +84,10 @@ def talker():
 	output.header.stamp = rospy.Time.now()
     	output.header.frame_id = "fcu"
 
-        output.pose.position.x = leicaThread.mLastX
-        output.pose.position.y = leicaThread.mLastY
-        output.pose.position.z = leicaThread.mLastZ
+		# NED Conversion
+        output.pose.position.x = leicaThread.mLastY
+        output.pose.position.y = leicaThread.mLastX
+        output.pose.position.z = -leicaThread.mLastZ
 
         output.pose.orientation.x = 0
         output.pose.orientation.y = 0
