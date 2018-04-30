@@ -47,7 +47,8 @@ class LeicaThread(Thread):
 				print "Server set as disconnected, returning to listening state"
 				self.listen()
 			else:
-				data = struct.unpack('Lfffffffff',data[0])
+				# data = struct.unpack('Lfffffffff',data[0])
+				data = struct.unpack('L4f',data[0])
 				# sys.stdout = open('TS2PX4_log.txt','awt')
 				# print data
 				try:
