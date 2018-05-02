@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # license removed for brevity
-import rospy, tf, socket
+import rospy
+import tf
+import socket
 from geometry_msgs.msg import PoseStamped
 from threading import Thread
 from math import *
@@ -9,94 +11,95 @@ import sys
 import time
 import struct
 
+
 class LeicaThread(Thread):
-	cBufferSize = 44
+    cBufferSize = 44
 
-	def __init__(self, _ip, _port):
-		Thread.__init__(self)
-		self.mLastX = 0;
-		self.mLastY = 0;
-		self.mLastZ = 0;
-		self.mRefX = 0;
-		self.mRefY = 0;
-		self.mRefZ = 0;
-		self.mSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-		self.mServer = (_ip,_port)
-		# self.mSocket.bind((_ip, _port))
-		# self.mIsconnected = False
-		self.mRun = True
-		# self.mState = 0;	# 0 all good; 1 disconnected; 2 listening; 3 data time out;4 unknown state
+    def __init__(self, _ip, _port):
+        Thread.__init__(self)
+        self.mLastX = 0
+        self.mLastY = 0
+        self.mLastZ = 0
+        self.mRefX = 0
+        self.mRefY = 0
+        self.mRefZ = 0
+        self.mSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.mServer = (_ip, _port)
+        # self.mSocket.bind((_ip, _port))
+        # self.mIsconnected = False
+        self.mRun = True
+        self.mLastTime = 0
 
-	def _del_(self):
-		self.mRun = False
-		# self.mConn.close()
-		self.mSocket.close()
+    def _del_(self):
+        self.mRun = False
+        self.mSocket.close()
 
-	def run(self):
-		sent = self.mSocket.sendto("Hola", self.mServer)
-		self.mLastTime = time.time()
-		# self.listen()
+    def run(self):
+        sent = self.mSocket.sendto("Hola", self.mServer)
+        self.mLastTime = time.time()
 
-		while (not rospy.is_shutdown()) and self.mRun:
-			data = self.mSocket.recvfrom(LeicaThread.cBufferSize)
-			self.mLastTime = time.time()
-			if not data:
-				print "No data received, disconnected from server as socket has been configured without timeout"
-				# self.mState = 1
-				# self.mIsconnected = False;
-				print "Server set as disconnected, returning to listening state"
-				self.listen()
-			else:
-				# data = struct.unpack('Lfffffffff',data[0])
-				data = struct.unpack('L4f',data[0])
-				# sys.stdout = open('TS2PX4_log.txt','awt')
-				# print data
-				try:
-					# print parseData
-					self.mLastX, self.mLastY, self.mLastZ, t = data[1], data[2], data[3], data[0]
-					# print "--------"
-				except IndexError:
-					print "Captured index error while parsing input data from socket. Skipping data"
+        while (not rospy.is_shutdown()) and self.mRun:
+            data = self.mSocket.recvfrom(LeicaThread.cBufferSize)
+            self.mLastTime = time.time()
+            if not data:
+                print "No data received, disconnected from server as socket has been configured without timeout"
+            else:
+                data = struct.unpack('L4f', data[0])
+                # sys.stdout = open('TS2PX4_log.txt','awt')
+                # print data
+                try:
+                    # print parseData
+                    self.mLastX, self.mLastY, self.mLastZ, t = data[1], data[2], data[3], data[0]
+                    # print "--------"
+                except IndexError:
+                    print "Captured index error while parsing input data from socket. Skipping data"
 
 
 def talker():
     rospy.init_node('tsbridge', anonymous=True)
-
+    watchdogCounter = 0
+    delayFilter = 5
     output = PoseStamped()
-
     # TSReceiver Socket
-
     pub = rospy.Publisher('/uav_1/mavros/vision_pose/pose', PoseStamped, queue_size=1)
 
-    TCP_IP = '192.168.100.30'
+    TCP_IP = '127.0.0.1'
     TCP_PORT = 8000
     leicaThread = LeicaThread(TCP_IP, TCP_PORT)
-    leicaThread.start();
+    leicaThread.start()
 
-    # while not leicaThread.mIsconnected:
-	# print "Waiting until leica is connected"
-	# time.sleep(1)
+    rate = rospy.Rate(20)  # 20hz
+    cMaxTimeOut = 1.0
 
-    rate = rospy.Rate(20) # 20hz
-    cMaxTimeOut = 2.0;
     while not rospy.is_shutdown():
+		#Y=X=Z with lost prism TS send 0,0,0 measure
+        if (time.time() - leicaThread.mLastTime > cMaxTimeOut) or (leicaThread.mLastY == leicaThread.mLastX and leicaThread.mLastX == leicaThread.mLastZ):
+            if watchdogCounter < 5:
+                watchdogCounter = watchdogCounter + 1
+                output.header.stamp = rospy.Time.now()
+        else:
+            output.header.stamp = rospy.Time.now()
+            watchdogCounter = 0
 
-	#if time.time() - leicaThread.mLastTime > cMaxTimeOut: # check timeout
-		#print "WARNING! exceeded timeout of last received measure"
+        if delayFilter == 0:
+            if (abs(output.pose.position.x - leicaThread.mLastY) < 0.4 or abs(output.pose.position.y - leicaThread.mLastX) < 0.4 or abs(output.pose.position.z - leicaThread.mLastZ) < 0.4):
+                # NED Conversion
+                output.pose.position.x = leicaThread.mLastY
+                output.pose.position.y = leicaThread.mLastX
+                output.pose.position.z = -leicaThread.mLastZ
+        else:
+            delayFilter = delayFilter - 1
+            # NED Conversion
+            output.pose.position.x = leicaThread.mLastY
+            output.pose.position.y = leicaThread.mLastX
+            output.pose.position.z = -leicaThread.mLastZ
 
-	output.header.stamp = rospy.Time.now()
-    	output.header.frame_id = "fcu"
-
-		# NED Conversion
-        output.pose.position.x = leicaThread.mLastY
-        output.pose.position.y = leicaThread.mLastX
-        output.pose.position.z = -leicaThread.mLastZ
-
+        # output.header.stamp = rospy.Time.now()
+        output.header.frame_id = "fcu"
         output.pose.orientation.x = 0
         output.pose.orientation.y = 0
         output.pose.orientation.z = 0
         output.pose.orientation.w = 1
-
 
         pub.publish(output)
         rate.sleep()
