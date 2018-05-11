@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import argparse
+import time
 import rospy
 from gazebo_msgs.msg import LinkStates
 from geometry_msgs.msg import PoseStamped
@@ -14,6 +15,10 @@ class PoseRepublisher:
         pose_stamped = PoseStamped()
         pose_stamped.header.stamp = rospy.Time.now()
         pose_stamped.header.frame_id = "fcu"  # TODO: Check!
+        if self.link_name not in data.name:
+            rospy.logwarn("Link %s not found", self.link_name)
+            time.sleep(1)
+            return
         link_index = data.name.index(self.link_name)
         pose_stamped.pose = data.pose[link_index]
         if self.only_position:
@@ -37,7 +42,7 @@ def main():
 
     rospy.init_node("gazebo_pose_server", anonymous=True)
     pose_republisher = PoseRepublisher(args.link_name, args.topic)
-    rospy.Subscriber("gazebo/link_states", LinkStates, pose_republisher.link_states_callback)
+    rospy.Subscriber("gazebo/link_states", LinkStates, pose_republisher.link_states_callback, queue_size=1)
     rospy.spin()
 
 if __name__ == '__main__':
