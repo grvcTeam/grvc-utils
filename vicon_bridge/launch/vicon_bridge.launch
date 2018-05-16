@@ -7,26 +7,28 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 -->
 <launch>
 
-<arg name="ual" default="sim"/>
+<arg name="vicon" default="sim"/>
+<arg name="robot_model" default="aeroarms"/>
 
-<include file="$(find follow_joint_trajectory_server)/launch/test_sim.launch" if="$(eval ual == 'sim')" />
-<include file="$(find follow_joint_trajectory_server)/launch/test_real.launch" if="$(eval ual == 'real')" />
+<node  if="$(eval vicon == 'sim')" name="vicon_sim" pkg="handy_tools" type="gazebo_pose_server.py" args="$(eval '-link_name=' + robot_model + '_1::base_link')" output="screen" />
 
-<include file="$(find mavros)/launch/px4.launch" if="$(eval ual == 'false')" />
+<group if="$(eval vicon == 'real')">
 
-<node name="vicon_client" pkg="vrpn_client_ros" type="vrpn_client_node" output="screen">
-   <rosparam subst_value="true">
-      server: tcp://10.0.0.2
-      port: 3883
-      update_frequency: 100.0
-      frame_id: vicon
-      use_server_time: false
-      broadcast_tf: true
-      trackers:
-      - MBZIRC_4
-    </rosparam>
-</node>
+  <node name="vicon_client" pkg="vrpn_client_ros" type="vrpn_client_node" output="screen">
+    <rosparam subst_value="true">
+        server: tcp://10.0.0.2
+        port: 3883
+        update_frequency: 100.0
+        frame_id: vicon
+        use_server_time: false
+        broadcast_tf: true
+        trackers:
+        - MBZIRC_4
+      </rosparam>
+  </node>
 
-<node name="relay" pkg="topic_tools" type="relay" args="/vicon_client/MBZIRC_4/pose /uav_1/mavros/vision_pose/pose" output="screen" />
+  <node name="relay" pkg="topic_tools" type="relay" args="/vicon_client/MBZIRC_4/pose /uav_1/mavros/vision_pose/pose" output="screen" />
+
+</group>
 
 </launch>
