@@ -23,13 +23,21 @@ class PoseWatchdog:
         self.repeat_count = 0
         self.vision_pose = PoseStamped()
         self.local_pose  = PoseStamped()
+        # self.vision_pose_prev = PoseStamped()
+        # self.local_pose_prev  = PoseStamped()
         self.vision_timer = rospy.Timer(rospy.Duration(self.timeout_th), vision_timer_callback)
         self.local_timer  = rospy.Timer(rospy.Duration(self.timeout_th), local_timer_callback)
 
     def check_distance(self):
         distance = position_distance(self.vision_pose.pose, self.local_pose.pose)
         if distance > self.vision_to_local_th:
-            rospy.logwarn("Vision to local pose distance =  %f", distance)
+            rospy.logwarn("Vision to local pose distance =  %f;\t vision(%f) = [%f, %f, %f], local(%f) = [%f, %f, %f]", distance, 
+            self.vision_pose.header.stamp.to_sec(), self.vision_pose.pose.position.x, self.vision_pose.pose.position.y, self.vision_pose.pose.position.z,
+            self.local_pose.header.stamp.to_sec(),  self.local_pose.pose.position.x,  self.local_pose.pose.position.y,  self.local_pose.pose.position.z)
+            # rospy.logwarn("Previously:                       \t\t vision(%f) = [%f, %f, %f], local(%f) = [%f, %f, %f]",
+            # self.vision_pose_prev.header.stamp.to_sec(), self.vision_pose_prev.pose.position.x, self.vision_pose_prev.pose.position.y, self.vision_pose_prev.pose.position.z,
+            # self.local_pose_prev.header.stamp.to_sec(),  self.local_pose_prev.pose.position.x,  self.local_pose_prev.pose.position.y,  self.local_pose_prev.pose.position.z)
+
 
     def vision_pose_callback(self, data):
         frozen_distance = position_distance(self.vision_pose.pose, data.pose)
@@ -41,6 +49,7 @@ class PoseWatchdog:
         if self.repeat_count > self.repeat_th:
             rospy.logwarn("Vision pose is frozen!")
 
+        # self.vision_pose_prev = self.vision_pose
         self.vision_pose = data
         self.check_distance()
 
@@ -48,6 +57,7 @@ class PoseWatchdog:
         self.vision_timer = rospy.Timer(rospy.Duration(self.timeout_th), vision_timer_callback)
 
     def local_pose_callback(self, data):
+        # self.local_pose_prev = self.local_pose
         self.local_pose = data
         self.check_distance()
         self.local_timer.shutdown()
