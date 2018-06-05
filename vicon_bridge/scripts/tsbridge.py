@@ -4,6 +4,8 @@ import rospy
 import tf
 import socket
 from geometry_msgs.msg import PoseStamped
+from mavros_msgs.srv import SetMode
+from mavros_msgs.msg import State
 from threading import Thread
 from math import *
 import signal
@@ -11,6 +13,12 @@ import sys
 import time
 import struct
 
+FLIGHT_MODE = ''
+
+def callbackState(data):
+    global FLIGHT_MODE
+    rospy.loginfo("PX4 %s MODE", data.mode)
+    FLIGHT_MODE = data.mode
 
 class LeicaThread(Thread):
     cBufferSize = 24
@@ -37,43 +45,54 @@ class LeicaThread(Thread):
         self.mSocket.close()
 
     def run(self):
+        global FLIGHT_MODE
         cMaxTimeOut = 1.0
-        sent = self.mSocket.sendto("Hola", self.mServer)
+        self.mSocket.sendto("Hola", self.mServer)
         self.mLastTime = time.time()
 
         while (not rospy.is_shutdown()) and self.mRun:
-            data = self.mSocket.recvfrom(LeicaThread.cBufferSize)
-            if not data:
-                print "No data received, disconnected from server as socket has been configured without timeout"
-            else:
-                # rospy.loginfo("%s %s", data, len(data[0]))
+            self.mSocket.settimeout(0.5)
+            try:
+                data = self.mSocket.recvfrom(LeicaThread.cBufferSize)
                 data = struct.unpack('fffQ', data[0])
-                # sys.stdout = open('TS2PX4_log.txt','awt')
+                self.TSerror = False
                 # print data
                 try:
-                    # Eval if any data is 0, measure delay or failed measures
-                    if(any(x is 0 for x in data) or (time.time() - self.mLastTime > cMaxTimeOut)):# or deltaFilter(data)):
+                    # Eval if any data is 0
+                    if any(x is 0 for x in data):# or deltaFilter(data)):
                         # Block publisher 
-                        rospy.logerr("Recived bad measurement quality %s %s", data,time.time() - self.mLastTime)
-                        self.TSerror = True
+                        rospy.logerr("Recived bad measurement quality -> input data: %s", data)
+                        if FLIGHT_MODE == "OFFBOARD":
+                            self.TSerror = True
+                            self.setFlightMode("ALTCTL")
                     else:
-                        self.mLastX, self.mLastY, self.mLastZ, t = data[0], data[1], data[2], data[3]
-                        # rospy.loginfo("%s", data)
                         self.TSerror = False
-                    # 
-                    self.mLastTime = time.time()
+                        self.mLastX, self.mLastY, self.mLastZ, t = data[0], data[1], data[2], data[3]
+                        self.mLastTime = time.time()
                 except IndexError as error:
                     print "Captured index error while parsing input data from socket. Skipping data"
                     print error
+            except socket.timeout:
+                print "No data received"
+                self.mSocket.sendto("Hola", self.mServer)
+                if FLIGHT_MODE == "OFFBOARD":
+                    self.TSerror = True
+                    self.setFlightMode("ALTCTL")
 
-    # def deltaFilter(lastPose,self):
-        # return abs(lastPose[1] - self.mLastX) < OFFSET or abs(lastPose[2] - self.mLastY) < OFFSET or abs(lastPose[3] - self.mLastZ) < OFFSET
+    def setFlightMode(self, _flight_mode):
+        global FLIGHT_MODE
+        rospy.wait_for_service('/uav_1/mavros/set_mode')
+        flight_mode_client_ = rospy.ServiceProxy('/uav_1/mavros/set_mode', SetMode)
+        while not rospy.is_shutdown() and FLIGHT_MODE != _flight_mode:
+            flight_mode_client_(0,_flight_mode) 
+            time.sleep(0.3)
 
 def talker():
     rospy.init_node('tsbridge', anonymous=True)
     output = PoseStamped()
     # TSReceiver Socket
     pub = rospy.Publisher('/uav_1/mavros/vision_pose/pose', PoseStamped, queue_size=1)
+    rospy.Subscriber("/uav_1/mavros/state", State, callbackState)
 
     TCP_IP = '127.0.0.1'
     TCP_PORT = 8000
