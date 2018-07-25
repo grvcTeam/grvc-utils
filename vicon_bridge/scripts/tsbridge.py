@@ -13,7 +13,7 @@ import sys
 import time
 import struct
 
-IP_TS_SERVER = '127.0.0.1'
+IP_TS_SERVER = '192.168.1.104'
 PORT_TS_SERVER = 8000
 FLIGHT_MODE = ''
 
@@ -45,6 +45,8 @@ class LeicaThread(Thread):
         global FLIGHT_MODE
         cBufferSize = 24
         cMaxTimeOut = 1.0
+	lastData = 0
+	contData = 0
         self.mSocket.sendto("Hola", self.mServer)
         self.mSocket.settimeout(2) # Tocame
         # self.mLastTime = time.time()
@@ -54,11 +56,18 @@ class LeicaThread(Thread):
                 data = self.mSocket.recvfrom(cBufferSize)
                 data = struct.unpack('fffQ', data[0])
                 # print data
+		if data == lastData:
+			contData+=1
+			print contData
+		else:
+			lastData = data
+			contData=0
+			#print contData
                 # Eval if received more than 10 failed measures
-                if self.ZeroCont>10 :
+                if self.ZeroCont>20 or contData>20 :
                     # Block publisher 
                     self.TSerror = True
-                    rospy.logerr("Zero counter completed")
+                    rospy.logerr("Counter completed")
                     # Change mode
                     if FLIGHT_MODE == "OFFBOARD" or FLIGHT_MODE == "POSCTL":
                         self.setFlightMode("ALTCTL")
