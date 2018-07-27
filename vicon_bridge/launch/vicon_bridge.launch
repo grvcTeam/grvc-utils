@@ -9,11 +9,11 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 <arg name="vicon" default="sim"/>
 <arg name="robot_model" default="aeroarms"/>
+<arg name="model_list" default="[$(arg robot_model)]"/>
 
 <node  if="$(eval vicon == 'sim')" name="vicon_sim" pkg="handy_tools" type="gazebo_pose_server.py" args="$(eval '-link_name=' + robot_model + '_1::base_link')" output="screen" />
 
 <group if="$(eval vicon == 'real')">
-
   <node name="vicon_client" pkg="vrpn_client_ros" type="vrpn_client_node" output="screen">
     <rosparam subst_value="true">
         server: tcp://10.0.0.2
@@ -22,14 +22,11 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
         frame_id: vicon
         use_server_time: false
         broadcast_tf: true
-        trackers:
-        - MBZIRC_4
-        - AEROARMS_TOOL
+        trackers: $(arg model_list)
       </rosparam>
   </node>
 
-  <node name="relay" pkg="topic_tools" type="relay" args="/vicon_client/MBZIRC_4/pose /uav_1/mavros/vision_pose/pose" output="screen" />
-
+  <node name="relay" pkg="topic_tools" type="relay" args="/vicon_client/$(arg robot_model)/pose /uav_1/mavros/vision_pose/pose" output="screen" />
 </group>
 
 </launch>
