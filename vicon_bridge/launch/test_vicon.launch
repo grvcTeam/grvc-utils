@@ -16,9 +16,10 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
         use_server_time: false
         broadcast_tf: true
         trackers:
-        - MBZIRC_4
-        - AEROARMS_TOOL
-      </rosparam>
+        - X6AEROARMS
+        - CrawlerAeroarmsUSE
+        - TUBERIA
+     </rosparam>
   </node>
 
 </launch>

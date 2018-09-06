@@ -1,0 +1,44 @@
+<!--
+The MIT License (MIT)
+Copyright (c) 2016 GRVC University of Seville
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+-->
+<launch>
+
+<arg name="vicon" default="real"/>
+<arg name="robot_model" default="aeroarms"/>
+
+<node  if="$(eval vicon == 'sim')" name="vicon_sim" pkg="handy_tools" type="gazebo_pose_server.py" args="$(eval '-link_name=' + robot_model + '_1::base_link')" output="screen" />
+
+<group if="$(eval vicon == 'real')">
+
+  <include file="$(find uav_abstraction_layer)/launch/test_server.launch">
+      <arg name="mode" value="serial"/>
+  </include>
+
+  <node name="vicon_client" pkg="vrpn_client_ros" type="vrpn_client_node" output="screen">
+    <rosparam subst_value="true">
+        server: tcp://10.0.0.2
+        port: 3883
+        update_frequency: 100.0
+        frame_id: vicon
+        use_server_time: false
+        broadcast_tf: true
+        trackers:
+        - X6AEROARMS
+        - CrawlerAeroarmsUSE
+        - SUPPORT_TOOL
+        - TUBERIA
+      </rosparam>
+  </node>
+
+  <node name="relay" pkg="topic_tools" type="relay" args="/vicon_client/X6AEROARMS/pose /uav_1/mavros/vision_pose/pose" output="screen" />
+
+  <node pkg="arms_control_interface" type="vicon_bridge" name="vicon_alexandros" output="screen" args="localhost 28001"/>
+
+  <node pkg="crawler_detection_aeroarms" type="crawler_detection_aeroarms" name="crawler_detection" output="screen" args="$(find crawler_detection_aeroarms)/sampleCrawler.json" />
+</group>
+
+</launch>
