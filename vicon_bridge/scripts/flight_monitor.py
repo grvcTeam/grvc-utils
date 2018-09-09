@@ -1,51 +1,62 @@
 #!/usr/bin/env python
 # license removed for brevity
 import rospy, tf, time
-from geometry_msgs.msg import PoseStamped
+from geometry_msgs.msg import PoseStamped, Point
 from mavros_msgs.msg import State
+from threading import Timer
 
-posePlatform = ""
-poseTool = ""
-local_pose = ""
+topicPlatform = "vicon_client/X6AEROARMS/pose"
+topicLocal = "uav_1/mavros/local_position/pose"
+topicState = "uav_1/mavros/state"
+
+ON,OFF = "\033[01;32mON\033[00m","\033[01;31mOFF\033[00m"
+
+vicon_stamp = []
+local_pose = Point()
 mavstate = ""
 
-def callback_Platform(data):
-    global posePlatform
-    posePlatform = data
+def is_estimator_out():
+    return (local_pose.x > -0.1 and local_pose.x < 0.1) and (local_pose.y > -0.1 and local_pose.y < 0.1) and (local_pose.z > -0.1 and local_pose.z < 0.1)
 
-def callback_Tool(data):
-    global poseTool
-    poseTool = data
+def callback_vicon(data):
+    global vicon_stamp
+    vicon_stamp = [data.header.stamp.secs, data.header.stamp.secs]
 
 def callback_local(data):
     global local_pose
-    local_pose = data
+    local_pose = data.pose.position
 
 def callback_state(data):
     global mavstate
-    mavstate = data.mode
-
+    mavstate = "\033[01;33m" + data.mode + "\033[00m"
 
 def talker():
+    global vicon_stamp
     rospy.init_node('monitor', anonymous=True)
+    last_stamp = []
+    vicon_state = OFF
+    estimator_state = OFF
 
-    rospy.Subscriber("vicon_client/X6AEROARMS/pose", PoseStamped, callback_Platform)
-    # rospy.Subscriber("vicon_client/CrawlerAeroarmsUSE/pose", PoseStamped, callback_Tool)
-    rospy.Subscriber("uav_1/mavros/local_position/pose", PoseStamped, callback_local)
-    rospy.Subscriber("uav_1/mavros/state", State, callback_state)
+    rospy.Subscriber(topicPlatform, PoseStamped, callback_vicon)
+    rospy.Subscriber(topicLocal, PoseStamped, callback_local)
+    rospy.Subscriber(topicState, State, callback_state)
 
-    x,x_e,y,y_e,z,z_e = 0,0,0,0,0,0
-
-    rate = rospy.Rate(50) # 1Hz
-    time.sleep(1)
-
+    rate = rospy.Rate(50) # 50Hz
+    
     while not rospy.is_shutdown():
-        x,y,z = abs(posePlatform.pose.position.x - local_pose.pose.position.x), abs(posePlatform.pose.position.y - local_pose.pose.position.y), abs(posePlatform.pose.position.z - local_pose.pose.position.z)
-        if x > x_e: x_e = x
-        if y > y_e: y_e = y
-        if z > z_e: z_e = z
-        print "[{0}] Diff Vicon-Platform x:{1:4f} y:{2:4f} z:{3:4f}\r".format(mavstate,x,y,z),
-        # rate.sleep()
+        if is_estimator_out(): 
+            estimator_state = OFF
+        else: 
+            estimator_state = ON
+
+        if last_stamp == vicon_stamp:
+                vicon_state = OFF
+        else:
+                vicon_state = ON
+
+        print "[{0}] Estimator - [{1}] | Vicon - [{2}] \r".format(mavstate,estimator_state, vicon_state),
+        vicon_stamp = last_stamp
+        rate.sleep()
 
 if __name__ == '__main__':
     try:
