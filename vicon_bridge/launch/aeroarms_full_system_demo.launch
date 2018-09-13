@@ -28,17 +28,28 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
         broadcast_tf: true
         trackers:
         - X6AEROARMS
-        - CrawlerAeroarmsUSE
         - SUPPORT_TOOL
         - TUBERIA
       </rosparam>
   </node>
 
   <node name="relay" pkg="topic_tools" type="relay" args="/vicon_client/X6AEROARMS/pose /uav_1/mavros/vision_pose/pose" output="screen" />
+  <!-- <node name="relay2" pkg="topic_tools" type="relay" args="/vicon_client/TUBERIA/pose /vicon_client/pipeEnd/pose" output="screen" />
+  <node name="relay3" pkg="topic_tools" type="relay" args="/vicon_client/TUBERIA_INIT/pose /vicon_client/pipeStart/pose" output="screen" /> -->
 
   <node pkg="arms_control_interface" type="vicon_bridge" name="vicon_alexandros" output="screen" args="localhost 28001"/>
 
   <node pkg="crawler_detection_aeroarms" type="crawler_detection_aeroarms" name="crawler_detection" output="screen" args="$(find crawler_detection_aeroarms)/sampleCrawler.json" />
+
+  <!-- <include file="$(find arms_control_interface)/launch/spawn_arm.launch">
+		<arg name="robot_model" value="aeroarms_hcda90"/>
+		<arg name="description_package" value="aeroarms_description"/>
+		<arg name="aci_backend" value="udp"/>
+	</include>
+
+    <node pkg="tf2_ros" type="static_transform_publisher" name="base_link_broadcaster" args="0 0 0 0 0 0 1 uav_1 base_link" />
+    <node name="aci_server" pkg="arms_control_interface" type="aci_server" args="-aci_backend=udp"/>
+    <node pkg="arms_control_interface" type="vicon_bridge" name="vicon_bridge" args="localhost 28001" /> -->
 </group>
 
 </launch>

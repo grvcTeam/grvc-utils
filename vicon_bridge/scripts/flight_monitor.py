@@ -16,7 +16,7 @@ local_pose = Point()
 mavstate = ""
 
 def is_estimator_out():
-    return (local_pose.x > -0.1 and local_pose.x < 0.1) and (local_pose.y > -0.1 and local_pose.y < 0.1) and (local_pose.z > -0.1 and local_pose.z < 0.1)
+    return (local_pose.x > -0.001 and local_pose.x < 0.001) and (local_pose.y > -0.001 and local_pose.y < 0.001)
 
 def callback_vicon(data):
     global vicon_stamp
@@ -41,12 +41,12 @@ def talker():
     rospy.Subscriber(topicLocal, PoseStamped, callback_local)
     rospy.Subscriber(topicState, State, callback_state)
 
-    rate = rospy.Rate(50) # 50Hz
-    
+    rate = rospy.Rate(5) # 5Hz
+
     while not rospy.is_shutdown():
-        if is_estimator_out(): 
+        if is_estimator_out():
             estimator_state = OFF
-        else: 
+        else:
             estimator_state = ON
 
         if last_stamp == vicon_stamp:

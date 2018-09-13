@@ -8,7 +8,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 <launch>
 
 <arg name="vicon" default="sim"/>
-<arg name="robot_model" default="aeroarms"/>
+<arg name="robot_model" default="X6AEROARMS"/>
 <arg name="model_list" default="[$(arg robot_model)]"/>
 
 <node  if="$(eval vicon == 'sim')" name="vicon_sim" pkg="handy_tools" type="gazebo_pose_server.py" args="$(eval '-link_name=' + robot_model + '_1::base_link')" output="screen" />
