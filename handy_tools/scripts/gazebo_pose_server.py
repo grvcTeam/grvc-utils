@@ -33,7 +33,7 @@ def main():
     parser = argparse.ArgumentParser(description="Republish any link pose from Gazebo simulator")
     parser.add_argument("-link_name", type=str, default="mbzirc_1::base_link",
                         help="name of the link whose pose is wanted, as in gazebo/link_states")
-    parser.add_argument('-topic', type=str, default="uav_1/mavros/vision_pose/pose",
+    parser.add_argument('-topic', type=str, default="mavros/vision_pose/pose",
                         help='name of the topic to republish pose')
     parser.add_argument('-only_position', action="store_true", default=False,
                         help='republish only position or also orientation')

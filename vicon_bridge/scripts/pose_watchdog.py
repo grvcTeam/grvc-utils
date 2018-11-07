@@ -66,8 +66,8 @@ class PoseWatchdog:
 def main():
     rospy.init_node("pose_watchdog", anonymous=True)
     pose_watchdog = PoseWatchdog()
-    rospy.Subscriber("uav_1/mavros/vision_pose/pose", PoseStamped, pose_watchdog.vision_pose_callback, queue_size=1)
-    rospy.Subscriber("uav_1/mavros/local_position/pose", PoseStamped, pose_watchdog.local_pose_callback, queue_size=1)
+    rospy.Subscriber("mavros/vision_pose/pose", PoseStamped, pose_watchdog.vision_pose_callback, queue_size=1)
+    rospy.Subscriber("mavros/local_position/pose", PoseStamped, pose_watchdog.local_pose_callback, queue_size=1)
     rospy.spin()
 
 if __name__ == '__main__':
