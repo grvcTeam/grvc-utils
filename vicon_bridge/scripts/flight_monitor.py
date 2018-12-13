@@ -5,7 +5,7 @@ from geometry_msgs.msg import PoseStamped, Point
 from mavros_msgs.msg import State
 from threading import Timer
 
-topicPlatform = "vicon_client/X6AEROARMS/pose"
+topicPlatform = "uav_1/mavros/vision_pose/pose"
 topicLocal = "uav_1/mavros/local_position/pose"
 topicState = "uav_1/mavros/state"
 
@@ -54,7 +54,7 @@ def talker():
         else:
                 vicon_state = ON
 
-        print "[{0}] Estimator - [{1}] | Vicon - [{2}] \r".format(mavstate,estimator_state, vicon_state),
+        print "[{0}] Estimator - [{1}] | VisionInput - [{2}] \r".format(mavstate,estimator_state, vicon_state),
         vicon_stamp = last_stamp
         rate.sleep()
 

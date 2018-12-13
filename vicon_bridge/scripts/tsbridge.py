@@ -4,169 +4,139 @@ import rospy
 import tf
 import socket
 from geometry_msgs.msg import PoseStamped
+from mavros_msgs.srv import SetMode
+from mavros_msgs.msg import State
 from threading import Thread
 from math import *
 import signal
 import sys
 import time
-import argparse
-import signal
+import struct
 
+IP_TS_SERVER = '192.168.1.104'
+PORT_TS_SERVER = 8000
+FLIGHT_MODE = ''
+
+def callbackState(data):
+    global FLIGHT_MODE
+    rospy.loginfo("PX4 %s MODE", data.mode)
+    FLIGHT_MODE = data.mode
 
 class LeicaThread(Thread):
-	cBufferSize = 1024
+    def __init__(self, _ip, _port):
+        Thread.__init__(self)
+        self.mLastX = 0
+        self.mLastY = 0
+        self.mLastZ = 0
+        self.mLastStamp = 0
+        # TSReceiver Socket
+        self.mSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.mServer = (_ip, _port)
+        self.mRun = True
+        self.TSerror = False
+        self.ZeroCont = 0
+        # self.mLastTime = 0
 
-	def __init__(self, _ip, _port):
-		Thread.__init__(self)
-		self.mLastX = 0
-		self.mLastY = 0
-		self.mLastZ = 0
-		self.mRefX = 0
-		self.mRefY = 0
-		self.mRefZ = 0
-		self.mSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-		self.mSocket.bind((_ip, _port))
-		self.mIsconnected = False
-		self.mRun = True
-		self.mIp = _ip
-		self.mPort = _port
-		self.mState = 0;  # 0 all good; 1 disconnected; 2 listening; 3 data time out;4 unknown state
+    def _del_(self):
+        self.mRun = False
+        self.mSocket.close()
 
-	def __del__(self):
-		self.mRun = False
-		self.mConn.close()
-		self.mSocket.close()
+    def run(self):
+        global FLIGHT_MODE
+        cBufferSize = 24
+        cMaxTimeOut = 1.0
+	lastData = 0
+	contData = 0
+        self.mSocket.sendto("Hola", self.mServer)
+        self.mSocket.settimeout(2) # Tocame
+        # self.mLastTime = time.time()
 
-	def listen(self):
-		self.mState = 2
-		self.mSocket.listen(1)
-		try:
-			print "Waiting for input connection"
-			self.mConn, self.mAddr = self.mSocket.accept()
-			sys.stdout.write("\033[F")  # back to previous line
-			sys.stdout.write("\033[K")  # clear line
-			rospy.loginfo('Connection address: %s', self.mAddr)
-			self.mIsconnected = True
-		except socket.error as msg:
-			self.mState = 1
-
-	def isRunning(self):
-		return self.mRun
-
-	def stop(self):
-		print "Stopping connection"
-		self.mRun = False
-		socket.socket(socket.AF_INET, socket.SOCK_STREAM).connect( (self.mIp, self.mPort))
-		self.mSocket.close()
-		print "Connection closed"
-
-	def run(self):
-		self.mLastTime = time.time()
-		self.listen()
-
-		while (not rospy.is_shutdown() and self.mRun):
-			data = self.mConn.recv(LeicaThread.cBufferSize)
-			self.mLastTime = time.time()
-			if not data:
-				print "No data received, disconnected from server as socket has been configured without timeout"
-				self.mState = 1
-				self.mIsconnected = False
-				print "Server set as disconnected, returning to listening state"
-				self.listen()
-			else:
-				# Parse input data
-				index_init = data.index('{')
-				data = data[index_init:]
-				index_end = data.index('}')
-				parseData = data[1:index_end]
-				parseData = parseData.split(";")
-				# Write log
-				# sys.stdout = open('TS2PX4_log.txt','awt')
-				if len(data) >= 37:
-					try:
-						# print parseData
-						self.mLastX, self.mLastY, self.mLastZ, t = float(parseData[0]), float([1]), float(parseData[2]), float(parseData[3])
-						# print "--------"
-					except IndexError:
-						print "Captured index error while parsing input data from socket. Skipping data"
-
-
-def talker(topic):
-	# Init ROS
-	rospy.init_node('tsbridge', anonymous=True)
-
-	# Init local variables
-	output = PoseStamped()
-	pub = rospy.Publisher(topic, PoseStamped, queue_size=10)
-
-	# Prepare connection with leica
-	TCP_IP = '0.0.0.0'
-	TCP_PORT = 8000
-	leicaThread = LeicaThread(TCP_IP, TCP_PORT)
-	leicaThread.start()
-
-	def signalHandler(signum, frame):
-		leicaThread.stop()
-		print "Exiting"
-		sys.exit()
-
-	signal.signal(signal.SIGINT, signalHandler)
-
-	dotCounter = 0
-	while ((not leicaThread.mIsconnected) and leicaThread.isRunning()):
-		print "Waiting until leica is connected"+"."*dotCounter
-		dotCounter = (dotCounter+1) if (dotCounter < 5) else 0
-		time.sleep(1)
-		sys.stdout.write("\033[F")  # back to previous line
-		sys.stdout.write("\033[K")  # clear line
-
-	print "Connected!"
-	rate = rospy.Rate(30)  # 10hz
-	cMaxTimeOut = 0.5
-
-	# Handle sigint to stop communication
-
-	# Publishing loop
-	while ((not rospy.is_shutdown()) and leicaThread.isRunning()):
-		# Delete last line
-		sys.stdout.write("\033[F") #back to previous line
-		sys.stdout.write("\033[K") #clear line
-		delay = time.time() - leicaThread.mLastTime
-		if delay > cMaxTimeOut: # check timeout
-			print "WARNING! exceeded timeout of last received measure. Delay: "+str(delay)+"."*dotCounter+" "
+        while (not rospy.is_shutdown()) and self.mRun:
+            try:
+                data = self.mSocket.recvfrom(cBufferSize)
+                data = struct.unpack('fffQ', data[0])
+                # print data
+		if data == lastData:
+			contData+=1
+			print contData
 		else:
-			print "Reasonable delay. Delay: "+str(delay)+"."*dotCounter
+			lastData = data
+			contData=0
+			#print contData
+                # Eval if received more than 10 failed measures
+                if self.ZeroCont>20 or contData>20 :
+                    # Block publisher 
+                    self.TSerror = True
+                    rospy.logerr("Counter completed")
+                    # Change mode
+                    if FLIGHT_MODE == "OFFBOARD" or FLIGHT_MODE == "POSCTL":
+                        self.setFlightMode("ALTCTL")
+                else:
+                    # Check zero in data received
+                    if any(x is 0 for x in data):
+                        # Update counter and let send last good measure
+                        self.ZeroCont += 1
+                        print self.ZeroCont # Debugging
+                    else:
+                        try:
+                            # All ok. Update position
+                            self.mLastX, self.mLastY, self.mLastZ, self.mLastStamp = data[0], data[1], data[2], data[3]
+                            self.TSerror = False
+                            self.ZeroCont = 0
+                            # self.mLastTime = time.time()
+                        except IndexError as error:
+                            self.ZeroCont += 1
+                            print "Captured index error while parsing input data from socket. Skipping data"
+                            print error
+            except socket.timeout:
+                print "No data received"
+                self.TSerror = True
+                
+                if FLIGHT_MODE == "OFFBOARD" or FLIGHT_MODE == "POSCTL":
+                    self.setFlightMode("ALTCTL")
 
-		dotCounter = (dotCounter+1) if (dotCounter < 5) else 0
+                self.mSocket.sendto("Hola", self.mServer) # Comprobar necesaria excepcion
 
-		output.header.stamp = rospy.Time.now()
-		output.header.frame_id = "fcu"
+    def setFlightMode(self, _flight_mode):
+        global FLIGHT_MODE
+        rospy.wait_for_service('/uav_1/mavros/set_mode')
+        flight_mode_client_ = rospy.ServiceProxy('/uav_1/mavros/set_mode', SetMode)
+        while not rospy.is_shutdown() and FLIGHT_MODE != _flight_mode:
+            flight_mode_client_(0,_flight_mode) 
+            time.sleep(0.3)
 
-		output.pose.position.x = leicaThread.mLastX
-		output.pose.position.y = leicaThread.mLastY
-		output.pose.position.z = leicaThread.mLastZ
+def talker():
+    rospy.init_node('tsbridge', anonymous=True)
+    output = PoseStamped()
+    
+    pub = rospy.Publisher('/uav_1/mavros/vision_pose/pose', PoseStamped, queue_size=1)
+    rospy.Subscriber("/uav_1/mavros/state", State, callbackState)
 
-		output.pose.orientation.x = 0
-		output.pose.orientation.y = 0
-		output.pose.orientation.z = 0
-		output.pose.orientation.w = 1
+    leicaThread = LeicaThread(IP_TS_SERVER, PORT_TS_SERVER)
+    leicaThread.start()
 
+    rate = rospy.Rate(20)  # 20hz
 
-		pub.publish(output)
-		rate.sleep()
+    while not rospy.is_shutdown():
+        if(not leicaThread.TSerror):
+            output.header.stamp = rospy.Time.now()
+            output.header.frame_id = "fcu"
 
+            output.pose.position.x = leicaThread.mLastX
+            output.pose.position.y = leicaThread.mLastY
+            output.pose.position.z = leicaThread.mLastZ
 
+            output.pose.orientation.x = 0
+            output.pose.orientation.y = 0
+            output.pose.orientation.z = 0
+            output.pose.orientation.w = 1
 
+            pub.publish(output)
+            
+        rate.sleep()
 
-# --- MAIN --- #
 if __name__ == '__main__':
-	parser = argparse.ArgumentParser(description='Leica bridge.')
-	parser.add_argument('--topic', type=str, help='Topic to publish in', required=False)
-	parser.parse_args()
-	try:
-		if(sys.argv == 2):
-			talker(parser.topic)
-		else:
-			talker("/uav_1/mavros/vision_pose/pose")
-	except rospy.ROSInterruptException:
-		pass
+    try:
+        talker()
+    except rospy.ROSInterruptException:
+        pass
