@@ -1,0 +1,6 @@
+list_to_zip:
+  - $HOME/catkin_ws/src/grvc-utils/handy_tools/package.xml  # $HOME gets expanded properly, include a file to zip
+  - ~/catkin_ws/src/grvc-utils/handy_tools/CMakeLists.txt  # ~/ gets expanded properly, include a file to zip
+  - ~/catkin_ws/src/grvc-utils/handy_tools/include/handy_tools/*.h  # Include all files matching *.h
+  - gazebo_pose_server.py  # A relative path only works if script is executed where expected
+  - $HOME/example_of_non_existent_file  # Non-existent file
