@@ -23,7 +23,6 @@
 
 #include <vector>
 #include <limits>
-#include <mutex>
 
 namespace grvc { namespace utils {
 
