@@ -49,7 +49,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
     <node pkg="tf2_ros" type="static_transform_publisher" name="base_link_broadcaster" args="0 0 0 0 0 0 1 uav_1 base_link" />
     <node name="aci_server" pkg="arms_control_interface" type="aci_server" args="-aci_backend=udp"/>
-    <node pkg="arms_control_interface" type="vicon_bridge" name="vicon_bridge" args="localhost 28001" /> -->
+    <node pkg="arms_control_interface" type="mocap_bridge" name="mocap_bridge" args="localhost 28001" /> -->
 </group>
 
 </launch>

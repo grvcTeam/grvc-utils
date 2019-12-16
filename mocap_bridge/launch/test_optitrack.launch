@@ -7,18 +7,16 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 -->
 <launch>
 
-  <node name="vicon_client" pkg="vrpn_client_ros" type="vrpn_client_node" output="screen">
+  <node name="mocap_client" pkg="vrpn_client_ros" type="vrpn_client_node" output="screen">
     <rosparam subst_value="true">
-        server: tcp://10.0.0.2
+        server: tcp://192.168.1.103
         port: 3883
         update_frequency: 100.0
-        frame_id: vicon
+        frame_id: mocap
         use_server_time: false
         broadcast_tf: true
         trackers:
-        - X6AEROARMS
-        - CrawlerAeroarmsUSE
-        - TUBERIA
+        - uav1
      </rosparam>
   </node>
 
