@@ -51,25 +51,26 @@ public:
             // ROS_DEBUG("rx: [%c]", rx);
 
 			switch (rx) {
-			    case '\n':
-                    packet_buffer_[packet_index_] = 0;
-                    // ROS_DEBUG("Packet: [%s]", packet_buffer_);
+            case '\n':
+                packet_buffer_[packet_index_] = 0;
+                // ROS_DEBUG("Packet: [%s]", packet_buffer_);
 
-                    if (sscanf(packet_buffer_, "%f m %f V %f", &distance_, &voltage_, &strength_) == 3) {
-                        has_new_data_ = true;
-                        // ROS_DEBUG("Distance: %0.2f m", distance_);
-                    }
-                    packet_index_ = 0;
-                    break;
+                if (sscanf(packet_buffer_, "%f m %f V %f", &distance_, &voltage_, &strength_) == 3) {
+                    has_new_data_ = true;
+                    // ROS_DEBUG("Distance: %0.2f m", distance_);
+                }
+                packet_index_ = 0;
+                break;
 
-			    case '\r':
-                    // Ignore
-                    break;
+            case '\r':
+                // Ignore
+                break;
 
-			    default:
-                    if (packet_index_ < sizeof(packet_buffer_) - 1) {
-                        packet_buffer_[packet_index_++] = rx;
-                    }
+            default:
+                if (packet_index_ < sizeof(packet_buffer_) - 1) {
+                    packet_buffer_[packet_index_++] = rx;
+                }
+                break;
             }
 		}
 	}
@@ -93,7 +94,7 @@ int main(int argc, char** argv) {
     int serial_baudrate;
     double publish_rate;
     ros::param::param<std::string>("~serial_path", serial_path, "/dev/ttyUSB0");
-    ros::param::param<int>("~serial_baudrate", serial_baudrate, 115200);
+    ros::param::param<int>("~serial_baudrate", serial_baudrate, B115200);  // Watchout, B is important here!
     ros::param::param<double>("~publish_rate", publish_rate, 20);
 
     int serial_port = open(serial_path.c_str(), O_RDWR | O_NOCTTY | O_SYNC);
