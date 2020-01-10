@@ -94,7 +94,7 @@ int main(int argc, char** argv) {
     int serial_baudrate;
     double publish_rate;
     ros::param::param<std::string>("~serial_path", serial_path, "/dev/ttyUSB0");
-    ros::param::param<int>("~serial_baudrate", serial_baudrate, B115200);  // Watchout, B is important here!
+    ros::param::param<int>("~serial_baudrate", serial_baudrate, 115200);
     ros::param::param<double>("~publish_rate", publish_rate, 20);
 
     int serial_port = open(serial_path.c_str(), O_RDWR | O_NOCTTY | O_SYNC);
@@ -104,7 +104,7 @@ int main(int argc, char** argv) {
         throw std::runtime_error(e_buffer);
     }
 
-    serial_port::configure(serial_port, serial_baudrate);
+    serial_port::configure(serial_port, serial_port::baudrate(serial_baudrate));
     serial_port::lock(serial_port);
 
 	SF11Range sf11_range;
