@@ -1,0 +1,14 @@
+<launch>
+	<arg name="port_name" default="/dev/ttyACM0"/>
+	<arg name="is_here_gps" default="true"/>
+	<arg name="survey_min_duration" default="180"/><!-- In seconds -->
+	<arg name="survey_min_accuracy" default="15000"/><!-- In 0.1mm -->
+
+	<node pkg="rtkbasestation" type="rtkbase" name="rtkbasestation" output="screen">
+		<param name="port_name" value="$(arg port_name)"/>
+		<param name="is_here_gps" value="$(arg is_here_gps)"/>
+		<param name="survey_min_duration" value="$(arg survey_min_duration)"/>
+		<param name="survey_min_accuracy" value="$(arg survey_min_accuracy)"/>
+	</node>
+
+</launch>

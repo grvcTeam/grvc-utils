@@ -1,0 +1,17 @@
+<package>
+  <name>rtkbasestation</name>
+  <author>Bruno Gomes</author>
+  <version>1.0.0</version>
+  <description>Publish rtcm data to ROS</description>
+  <maintainer email="bgomes@isr.tecnico.ulisboa.pt">bgomes</maintainer>
+  <license>APL</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <build_depend>roscpp</build_depend>
+  <build_depend>std_msgs</build_depend>
+  <build_depend>mavros_msgs</build_depend>
+
+  <run_depend>roscpp</run_depend>
+
+</package>
