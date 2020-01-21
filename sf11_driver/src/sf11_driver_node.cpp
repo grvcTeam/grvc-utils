@@ -25,9 +25,9 @@
 class SF11Range {
 public:
 
-    SF11Range() {
+    SF11Range(const std::string& _frame_id) {
         // Constant data
-        data_.header.frame_id = "sf11";
+        data_.header.frame_id = _frame_id;
         data_.radiation_type = sensor_msgs::Range::INFRARED;  // not really...
         data_.field_of_view = 0.0035;  // [rad]
         data_.min_range = 0.2;  // [m]
@@ -90,9 +90,11 @@ int main(int argc, char** argv) {
     ros::init(argc, argv, "sf11_driver_node");
     ros::NodeHandle n;
 
+    std::string frame_id;
     std::string serial_path;
     int serial_baudrate;
     double publish_rate;
+    ros::param::param<std::string>("~frame_id", frame_id, "sf11");
     ros::param::param<std::string>("~serial_path", serial_path, "/dev/ttyUSB0");
     ros::param::param<int>("~serial_baudrate", serial_baudrate, 115200);
     ros::param::param<double>("~publish_rate", publish_rate, 20);
@@ -107,7 +109,7 @@ int main(int argc, char** argv) {
     serial_port::configure(serial_port, serial_port::baudrate(serial_baudrate));
     serial_port::lock(serial_port);
 
-	SF11Range sf11_range;
+	SF11Range sf11_range(frame_id);
     ros::Publisher sf11_range_pub = n.advertise<sensor_msgs::Range>("sf11", 10);
     char rx_buffer[64];
 

@@ -25,9 +25,9 @@
 class SF11Sim {
 public:
 
-    SF11Sim() {
+    SF11Sim(const std::string& _frame_id) {
         // Constant data
-        data_.header.frame_id = "sf11";
+        data_.header.frame_id = _frame_id;
         data_.radiation_type = sensor_msgs::Range::INFRARED;  // not really...
         data_.field_of_view = 0.0035;  // [rad]
         data_.min_range = 0.2;  // [m]
@@ -53,7 +53,10 @@ protected:
 int main(int argc, char** argv) {
     ros::init(argc, argv, "sf11_sim_node");
 
-	SF11Sim sf11_sim;
+    std::string frame_id;
+    ros::param::param<std::string>("~frame_id", frame_id, "sf11");
+
+	SF11Sim sf11_sim(frame_id);
     ros::spin();
 
     return 0;
