@@ -38,8 +38,12 @@ public:
 
     sensor_msgs::Range get() {
         // TODO: Use strength_/voltage_?
-        data_.header.stamp = ros::Time::now();
-        data_.range = distance_;
+        if (distance_ < data_.max_range) {
+            data_.header.stamp = ros::Time::now();
+            data_.range = distance_;
+        } else {
+            ROS_WARN("Detecteted sf11 glitch!");
+        }
         has_new_data_ = false;
         return data_;
     }
@@ -97,7 +101,7 @@ int main(int argc, char** argv) {
     ros::param::param<std::string>("~frame_id", frame_id, "sf11");
     ros::param::param<std::string>("~serial_path", serial_path, "/dev/ttyUSB0");
     ros::param::param<int>("~serial_baudrate", serial_baudrate, 115200);
-    ros::param::param<double>("~publish_rate", publish_rate, 20);
+    ros::param::param<double>("~publish_rate", publish_rate, 20);  // TODO: Deceiving name, should be max_publish_rate!
 
     int serial_port = open(serial_path.c_str(), O_RDWR | O_NOCTTY | O_SYNC);
     if (serial_port == -1) {
