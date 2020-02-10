@@ -9,8 +9,6 @@ project(mocap_bridge)
 ## is used, also find other catkin packages
 
 find_package(catkin REQUIRED COMPONENTS
-  mavros
-  mavros_extras
 )
 
 ## System dependencies are found with CMake's conventions
