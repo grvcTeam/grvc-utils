@@ -39,7 +39,7 @@ if [ $? -eq 0 ]; then
 	mkdir -p ~/catkin_ws/src
 	(cd ~/catkin_ws/ && catkin_make)
 	source ~/catkin_ws/devel/setup.bash
-	echo "source /home/grvc/catkin_ws/devel/setup.bash" >> ~/.bashrc
+	echo "source /home/$(whoami)/catkin_ws/devel/setup.bash" >> ~/.bashrc
 else
 	echo -e "${RED}[ERROR]Instalation failed, please try again${NC}"
 fi
