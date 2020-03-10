@@ -43,7 +43,7 @@ void JointAnimatorGazeboPlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _
         ros::VoidPtr(), &this->queue_);
     this->sub_ = this->rosnode_->subscribe(joint_state_so);
 
-    this->last_time_ = this->world_->GetSimTime();
+    this->last_time_ = this->world_->SimTime();
 
     // start custom queue for joint state plugin ros topics
     this->callback_queue_thread_ = boost::thread(boost::bind(&JointAnimatorGazeboPlugin::QueueThread, this));
