@@ -9,7 +9,9 @@ add_definitions(-std=c++11)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED
   geometry_msgs
+  geographic_msgs
   roscpp
+  rospy
   std_msgs
   tf2_ros
   tf2_kdl
