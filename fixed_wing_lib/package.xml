@@ -1,0 +1,33 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>fixed_wing_lib</name>
+  <version>0.0.0</version>
+  <description>The fixed_wing_lib package</description>
+
+  <maintainer email="angelmanuelmontesromero@gmail.com">Ángel M. Montes Romero</maintainer> <!-- should change -->
+
+  <license>MIT</license>
+
+  <!-- <author email="jane.doe@example.com">Jane Doe</author> -->
+
+  <buildtool_depend>catkin</buildtool_depend>
+  <build_depend>mavros</build_depend>
+  <build_depend>mavros_msgs</build_depend>
+  <build_depend>roscpp</build_depend>
+  <build_depend>ual_backend_mavros</build_depend>
+  <build_depend>uav_abstraction_layer</build_depend>
+  <build_export_depend>mavros</build_export_depend>
+  <build_export_depend>mavros_msgs</build_export_depend>
+  <build_export_depend>roscpp</build_export_depend>
+  <build_export_depend>ual_backend_mavros</build_export_depend>
+  <build_export_depend>uav_abstraction_layer</build_export_depend>
+  <exec_depend>mavros</exec_depend>
+  <exec_depend>mavros_msgs</exec_depend>
+  <exec_depend>roscpp</exec_depend>
+  <exec_depend>ual_backend_mavros</exec_depend>
+  <exec_depend>uav_abstraction_layer</exec_depend>
+
+  <export>
+    <!-- Other tools can request additional information be placed here -->
+  </export>
+</package>
