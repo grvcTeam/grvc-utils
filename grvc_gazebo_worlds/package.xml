@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>grvc_gazebo_worlds</name>
+  <version>0.0.0</version>
+  <description>Package with useful worlds to simulate experiments of the GRVC.</description>
+
+  <maintainer email="amontesromero@us.es">Ángel Manuel Montes Romero</maintainer>
+
+  <license>MIT</license>
+
+</package>
