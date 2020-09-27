@@ -4,11 +4,9 @@
   <version>0.0.0</version>
   <description>The fixed_wing_lib package</description>
 
-  <maintainer email="angelmanuelmontesromero@gmail.com">Ángel M. Montes Romero</maintainer> <!-- should change -->
+  <maintainer email="amontesromero@us.es">Ángel Manuel Montes Romero</maintainer>
 
   <license>MIT</license>
-
-  <!-- <author email="jane.doe@example.com">Jane Doe</author> -->
 
   <buildtool_depend>catkin</buildtool_depend>
   <build_depend>mavros</build_depend>

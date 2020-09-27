@@ -49,6 +49,12 @@ public:
 
 private:
     bool pushMission(const mavros_msgs::WaypointList& _wp_list);
+    void clearMission();
+
+    /// Ros Communication
+    ros::ServiceClient push_mission_client_;
+    ros::ServiceClient clear_mission_client_;
+
 };
 
 #endif // FIXED_WING_LIB_H

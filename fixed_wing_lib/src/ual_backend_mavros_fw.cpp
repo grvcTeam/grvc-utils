@@ -562,7 +562,7 @@ void BackendMavrosFW::setMission(const std::vector<MissionElement>& _mission_ele
         ROS_ERROR("Mission aborted!");
     }
     else {
-        ROS_INFO("Mission definition es correct.");
+        ROS_INFO("Mission definition is correct.");
         clearMission();
         bool push_success = pushMission(new_mission);
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
