@@ -99,7 +99,7 @@ public:
     /// Use it when FLYING uav is switched to manual mode and want to go BACK to auto.
     void    recoverFromManual() override;
     /// Set home position
-    void    setHome(bool set_z) override;
+    void    setHome(bool _set_z) override;
 
 private:
     void missionThreadLoop();
@@ -120,17 +120,17 @@ private:
     void setParam(const std::string& _param_id,const int& _param_value);
     bool pushMission(const mavros_msgs::WaypointList& _wp_list);
     void clearMission();
-    void addTakeOffWp(mavros_msgs::WaypointList& _wp_list, const uav_abstraction_layer::MissionElement& _waypoint_element, const int& wp_set_index);
-    void addPassWpList(mavros_msgs::WaypointList& _wp_list, const uav_abstraction_layer::MissionElement& _waypoint_element, const int& wp_set_index);
-    void addLoiterWpList(mavros_msgs::WaypointList& _wp_list, const uav_abstraction_layer::MissionElement& _waypoint_element, const int& wp_set_index);
-    void addLandWpList(mavros_msgs::WaypointList& _wp_list, const uav_abstraction_layer::MissionElement& _waypoint_element, const int& wp_set_index);
-    void addSpeedWpList(mavros_msgs::WaypointList& _wp_list, const uav_abstraction_layer::MissionElement& _waypoint_element, const int& wp_set_index);
+    void addTakeOffWp(mavros_msgs::WaypointList& _wp_list, const uav_abstraction_layer::MissionElement& _waypoint_element, const int& _wp_set_index);
+    void addPassWpList(mavros_msgs::WaypointList& _wp_list, const uav_abstraction_layer::MissionElement& _waypoint_element, const int& _wp_set_index);
+    void addLoiterWpList(mavros_msgs::WaypointList& _wp_list, const uav_abstraction_layer::MissionElement& _waypoint_element, const int& _wp_set_index);
+    void addLandWpList(mavros_msgs::WaypointList& _wp_list, const uav_abstraction_layer::MissionElement& _waypoint_element, const int& _wp_set_index);
+    void addSpeedWpList(mavros_msgs::WaypointList& _wp_list, const uav_abstraction_layer::MissionElement& _waypoint_element, const int& _wp_set_index);
     std::vector<geographic_msgs::GeoPoseStamped> uniformizeSpatialField( const uav_abstraction_layer::MissionElement& _waypoint_element);
     geographic_msgs::GeoPoseStamped poseStampedtoGeoPoseStamped(const geometry_msgs::PoseStamped& _posestamped );
     geometry_msgs::PoseStamped geoPoseStampedtoPoseStamped(const geographic_msgs::GeoPoseStamped _geoposestamped );
     mavros_msgs::Waypoint geoPoseStampedtoGlobalWaypoint(const geographic_msgs::GeoPoseStamped& _geoposestamped );
-    float getMissionYaw(const geometry_msgs::Quaternion& quat);
-    void checkMissionParams(const std::map<std::string, float>& existing_params_map, const std::vector<std::string>& required_params, const int& wp_set_index);
+    float getMissionYaw(const geometry_msgs::Quaternion& _quat);
+    void checkMissionParams(const std::map<std::string, float>& _existing_params_map, const std::vector<std::string>& _required_params, const int& _wp_set_index);
     void initMission();
     
     //WaypointList path_;

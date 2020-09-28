@@ -327,8 +327,8 @@ void BackendMavrosFW::recoverFromManual() {
     ROS_INFO("Recovered from manual mode!");
 }
 
-void BackendMavrosFW::setHome(bool set_z) {
-    double z_offset = set_z ? cur_pose_.pose.position.z : 0.0;
+void BackendMavrosFW::setHome(bool _set_z) {
+    double z_offset = _set_z ? cur_pose_.pose.position.z : 0.0;
     local_start_pos_ = -Eigen::Vector3d(cur_pose_.pose.position.x, \
         cur_pose_.pose.position.y, z_offset);
 }
@@ -920,7 +920,7 @@ void BackendMavrosFW::clearMission() {
 }
 
 
-void BackendMavrosFW::addTakeOffWp(mavros_msgs::WaypointList& _wp_list, const MissionElement& _waypoint_element, const int& wp_set_index) {
+void BackendMavrosFW::addTakeOffWp(mavros_msgs::WaypointList& _wp_list, const MissionElement& _waypoint_element, const int& _wp_set_index) {
 
     std::map<std::string, float> params_map;
     for(std::vector<int>::size_type i = 0; i != _waypoint_element.params.size(); i++) {
@@ -933,7 +933,7 @@ void BackendMavrosFW::addTakeOffWp(mavros_msgs::WaypointList& _wp_list, const Mi
 
     if (_waypoint_element.type == MissionElement::TAKEOFF_POSE) {
         
-        if (usf.size() != 1){ ROS_ERROR("Error in [%d]-th waypoint set, posestamped list lenght is not 1!", wp_set_index); } //TODO(JoseAndres): Update errors
+        if (usf.size() != 1){ ROS_ERROR("Error in [%d]-th waypoint set, posestamped list lenght is not 1!", _wp_set_index); } //TODO(JoseAndres): Update errors
         
         wp = geoPoseStampedtoGlobalWaypoint(usf[0]);
 
@@ -943,7 +943,7 @@ void BackendMavrosFW::addTakeOffWp(mavros_msgs::WaypointList& _wp_list, const Mi
 
     else if (_waypoint_element.type == MissionElement::TAKEOFF_AUX) {
         std::vector<std::string> required_aux_params { "aux_distance","aux_angle","aux_height" };
-        checkMissionParams(params_map, required_aux_params, wp_set_index);
+        checkMissionParams(params_map, required_aux_params, _wp_set_index);
 
         geometry_msgs::PoseStamped aux_pose = pose();
         aux_pose.pose.position.x += params_map["aux_distance"] * cos(params_map["aux_angle"]);
@@ -961,7 +961,7 @@ void BackendMavrosFW::addTakeOffWp(mavros_msgs::WaypointList& _wp_list, const Mi
     wp.autocontinue = true;
 
     std::vector<std::string> required_params { "minimum_pitch" };
-    checkMissionParams(params_map, required_params, wp_set_index);
+    checkMissionParams(params_map, required_params, _wp_set_index);
 
     wp.param1 = params_map["minimum_pitch"];    // (if airspeed sensor present), desired pitch without sensor
     wp.param4 = params_map["yaw_angle"];        // (if magnetometer present), ignored without magnetometer. NaN for unchanged.
@@ -971,23 +971,23 @@ void BackendMavrosFW::addTakeOffWp(mavros_msgs::WaypointList& _wp_list, const Mi
 
 }
 
-void BackendMavrosFW::addPassWpList(mavros_msgs::WaypointList& _wp_list, const MissionElement& _waypoint_element, const int& wp_set_index) {
+void BackendMavrosFW::addPassWpList(mavros_msgs::WaypointList& _wp_list, const MissionElement& _waypoint_element, const int& _wp_set_index) {
 
     std::vector<geographic_msgs::GeoPoseStamped> usf;
     usf = uniformizeSpatialField(_waypoint_element);
 
-    if (usf.size() == 0){ ROS_ERROR("Error in [%d]-th waypoint set, posestamped list is empty!", wp_set_index); }
+    if (usf.size() == 0){ ROS_ERROR("Error in [%d]-th waypoint set, posestamped list is empty!", _wp_set_index); }
 
     std::map<std::string, float> params_map;
     for(std::vector<int>::size_type i = 0; i != _waypoint_element.params.size(); i++) {
         params_map.insert( std::pair<std::string,float>(_waypoint_element.params[i].name,_waypoint_element.params[i].value) );    }
 
     if ( params_map.count( "speed" ) == 1) {
-        addSpeedWpList(_wp_list,_waypoint_element,wp_set_index);
+        addSpeedWpList(_wp_list,_waypoint_element,_wp_set_index);
     }
 
     std::vector<std::string> required_params { "acceptance_radius","orbit_distance" };
-    checkMissionParams(params_map, required_params, wp_set_index);
+    checkMissionParams(params_map, required_params, _wp_set_index);
 
     for ( auto & geoposestamped : usf ) {
 
@@ -1012,19 +1012,19 @@ void BackendMavrosFW::addPassWpList(mavros_msgs::WaypointList& _wp_list, const M
     }
 }
 
-void BackendMavrosFW::addLoiterWpList(mavros_msgs::WaypointList& _wp_list, const MissionElement& _waypoint_element, const int& wp_set_index) {
+void BackendMavrosFW::addLoiterWpList(mavros_msgs::WaypointList& _wp_list, const MissionElement& _waypoint_element, const int& _wp_set_index) {
 
     std::vector<geographic_msgs::GeoPoseStamped> usf;
     usf = uniformizeSpatialField(_waypoint_element);
 
-    if (usf.size() == 0){ ROS_ERROR("Error in [%d]-th waypoint set, posestamped list is empty!", wp_set_index); }
+    if (usf.size() == 0){ ROS_ERROR("Error in [%d]-th waypoint set, posestamped list is empty!", _wp_set_index); }
 
     std::map<std::string, float> params_map;
     for(std::vector<int>::size_type i = 0; i != _waypoint_element.params.size(); i++) {
         params_map.insert( std::pair<std::string,float>(_waypoint_element.params[i].name,_waypoint_element.params[i].value) );    }
 
     if ( params_map.count( "speed" ) == 1) {
-        addSpeedWpList(_wp_list,_waypoint_element,wp_set_index);
+        addSpeedWpList(_wp_list,_waypoint_element,_wp_set_index);
     }
 
     for ( auto & geoposestamped : usf ) {
@@ -1038,7 +1038,7 @@ void BackendMavrosFW::addLoiterWpList(mavros_msgs::WaypointList& _wp_list, const
         if (_waypoint_element.type == MissionElement::LOITER_UNLIMITED) {
 
             std::vector<std::string> required_params { "radius" };
-            checkMissionParams(params_map, required_params, wp_set_index);
+            checkMissionParams(params_map, required_params, _wp_set_index);
 
             params_map["yaw_angle"] = getMissionYaw(geoposestamped.pose.orientation);
 
@@ -1050,7 +1050,7 @@ void BackendMavrosFW::addLoiterWpList(mavros_msgs::WaypointList& _wp_list, const
         else if (_waypoint_element.type == MissionElement::LOITER_TURNS) {
 
             std::vector<std::string> required_params { "turns","radius","forward_moving" };
-            checkMissionParams(params_map, required_params, wp_set_index);
+            checkMissionParams(params_map, required_params, _wp_set_index);
 
             wp.command = 18;        // MAV_CMD_NAV_LOITER_TURNS
             wp.param1 = params_map["turns"];                // Number of turns.
@@ -1062,7 +1062,7 @@ void BackendMavrosFW::addLoiterWpList(mavros_msgs::WaypointList& _wp_list, const
         else if (_waypoint_element.type == MissionElement::LOITER_TIME) {
 
             std::vector<std::string> required_params { "time","radius","forward_moving" };
-            checkMissionParams(params_map, required_params, wp_set_index);
+            checkMissionParams(params_map, required_params, _wp_set_index);
 
             wp.command = 19;        // MAV_CMD_NAV_LOITER_TIME
             wp.param1 = params_map["time"];                 // 	Loiter time.
@@ -1076,7 +1076,7 @@ void BackendMavrosFW::addLoiterWpList(mavros_msgs::WaypointList& _wp_list, const
             wp.command = 31;        // MAV_CMD_NAV_LOITER_TO_ALT
 
             std::vector<std::string> required_params { "heading","radius","forward_moving" };
-            checkMissionParams(params_map, required_params, wp_set_index);
+            checkMissionParams(params_map, required_params, _wp_set_index);
 
             wp.param1 = params_map["heading"];              // Heading Required (0 = False)
             wp.param2 = params_map["radius"];               // If positive loiter clockwise, negative counter-clockwise, 0 means no change to standard loiter.
@@ -1089,7 +1089,7 @@ void BackendMavrosFW::addLoiterWpList(mavros_msgs::WaypointList& _wp_list, const
 
 }
 
-void BackendMavrosFW::addLandWpList(mavros_msgs::WaypointList& _wp_list, const MissionElement& _waypoint_element, const int& wp_set_index) {
+void BackendMavrosFW::addLandWpList(mavros_msgs::WaypointList& _wp_list, const MissionElement& _waypoint_element, const int& _wp_set_index) {
 
     std::vector<geographic_msgs::GeoPoseStamped> usf;
     usf = uniformizeSpatialField(_waypoint_element);
@@ -1111,7 +1111,7 @@ void BackendMavrosFW::addLandWpList(mavros_msgs::WaypointList& _wp_list, const M
 
     if (_waypoint_element.type == MissionElement::LAND_POSE) {
 
-        if (usf.size() != 2){ ROS_ERROR("Error in [%d]-th waypoint, posestamped list length is not 2!", wp_set_index); }
+        if (usf.size() != 2){ ROS_ERROR("Error in [%d]-th waypoint, posestamped list length is not 2!", _wp_set_index); }
 
         wp2 = geoPoseStampedtoGlobalWaypoint(usf[0]);
         
@@ -1119,10 +1119,10 @@ void BackendMavrosFW::addLandWpList(mavros_msgs::WaypointList& _wp_list, const M
 
     else if (_waypoint_element.type == MissionElement::LAND_AUX) {
 
-        if (usf.size() != 1){ ROS_ERROR("Error in [%d]-th waypoint, posestamped list length is not 1!", wp_set_index); }
+        if (usf.size() != 1){ ROS_ERROR("Error in [%d]-th waypoint, posestamped list length is not 1!", _wp_set_index); }
 
         std::vector<std::string> required_aux_params { "aux_distance","aux_angle", "aux_height" };
-        checkMissionParams(params_map, required_aux_params, wp_set_index);
+        checkMissionParams(params_map, required_aux_params, _wp_set_index);
 
         geometry_msgs::PoseStamped aux_pose = geoPoseStampedtoPoseStamped(usf[0]);
         aux_pose.pose.position.x += params_map["aux_distance"] * cos(params_map["aux_angle"]) + local_start_pos_[0];
@@ -1139,7 +1139,7 @@ void BackendMavrosFW::addLandWpList(mavros_msgs::WaypointList& _wp_list, const M
     wp2.autocontinue = true;
 
     std::vector<std::string> required_params_2 { "loit_heading","loit_radius","loit_forward_moving" };
-    checkMissionParams(params_map, required_params_2, wp_set_index);
+    checkMissionParams(params_map, required_params_2, _wp_set_index);
 
     wp2.param1 = params_map["loit_heading"];            	// Heading Required (0 = False)
     wp2.param2 = params_map["loit_radius"];                 // If positive loiter clockwise, negative counter-clockwise, 0 means no change to standard loiter.
@@ -1158,7 +1158,7 @@ void BackendMavrosFW::addLandWpList(mavros_msgs::WaypointList& _wp_list, const M
     params_map["yaw_angle"] = getMissionYaw(usf.back().pose.orientation);
 
     std::vector<std::string> required_params_3 { "abort_alt","precision_mode" };
-    checkMissionParams(params_map, required_params_3, wp_set_index);
+    checkMissionParams(params_map, required_params_3, _wp_set_index);
 
     wp3.param1 = params_map["abort_alt"];                   // Minimum target altitude if landing is aborted (0 = undefined/use system default).
     wp3.param2 = params_map["precision_mode"];              // Precision land mode.
@@ -1169,14 +1169,14 @@ void BackendMavrosFW::addLandWpList(mavros_msgs::WaypointList& _wp_list, const M
 
 }
 
-void BackendMavrosFW::addSpeedWpList(mavros_msgs::WaypointList& _wp_list, const MissionElement& _waypoint_element, const int& wp_set_index) {
+void BackendMavrosFW::addSpeedWpList(mavros_msgs::WaypointList& _wp_list, const MissionElement& _waypoint_element, const int& _wp_set_index) {
 
     std::map<std::string, float> params_map;
     for(std::vector<int>::size_type i = 0; i != _waypoint_element.params.size(); i++) {
         params_map.insert( std::pair<std::string,float>(_waypoint_element.params[i].name,_waypoint_element.params[i].value) ); }
 
     std::vector<std::string> required_params { "speed" };
-    checkMissionParams(params_map, required_params, wp_set_index);
+    checkMissionParams(params_map, required_params, _wp_set_index);
 
     mavros_msgs::Waypoint wp;
     wp.frame = 2;       // FRAME_MISSION
@@ -1299,28 +1299,28 @@ mavros_msgs::Waypoint BackendMavrosFW::geoPoseStampedtoGlobalWaypoint(const geog
 
 }
 
-float BackendMavrosFW::getMissionYaw(const geometry_msgs::Quaternion& quat) {
+float BackendMavrosFW::getMissionYaw(const geometry_msgs::Quaternion& _quat) {
 
     float yaw;
 
-    double norm = quat.x*quat.x  + quat.y*quat.y  + quat.z*quat.z  + quat.w*quat.w;
+    double norm = _quat.x*_quat.x  + _quat.y*_quat.y  + _quat.z*_quat.z  + _quat.w*_quat.w;
 
     if ( norm == 0) {
         yaw = std::nanf("0.0");
     }
 
     else {
-        yaw = tf::getYaw(quat);
+        yaw = tf::getYaw(_quat);
     }
 
     return yaw;
 }
 
 
-void BackendMavrosFW::checkMissionParams(const std::map<std::string, float>& existing_params_map, const std::vector<std::string>& required_params, const int& wp_set_index){
-    for ( auto &_param :  required_params){
-        if (existing_params_map.count(_param) == 0){
-            ROS_ERROR("Warn in [%d]-th waypoint set, [%s] param not provided!", wp_set_index, _param.c_str());
+void BackendMavrosFW::checkMissionParams(const std::map<std::string, float>& _existing_params_map, const std::vector<std::string>& _required_params, const int& _wp_set_index){
+    for ( auto &_param :  _required_params){
+        if (_existing_params_map.count(_param) == 0){
+            ROS_ERROR("Warn in [%d]-th waypoint set, [%s] param not provided!", _wp_set_index, _param.c_str());
         }
     }
 }

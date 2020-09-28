@@ -19,13 +19,12 @@
 // OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //----------------------------------------------------------------------------------------------------------------------
 #include <fixed_wing_lib/fixed_wing.h>
-#include <ros/ros.h>
 
 int main(int _argc, char** _argv) {
 
     ros::init(_argc, _argv, "fixed_wing_node");
 
-    FixedWing fw;
+    grvc::fw_ns::FixedWing fw;
 
     while (ros::ok()) { sleep(1); }
 
