@@ -23,23 +23,24 @@
 
 #include <ros/ros.h>
 #include <ros/package.h>
+#include <mavros/utils.h>
 #include <string>
 #include <chrono>
 #include <Eigen/Eigen>
 #include <tf2/utils.h>
-#include <uav_abstraction_layer/geographic_to_cartesian.h>
-#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <tf2/LinearMath/Quaternion.h>
-#include <mavros_msgs/ParamGet.h>
-#include <mavros_msgs/CommandTOL.h>
+#include <uav_abstraction_layer/geographic_to_cartesian.h>
+
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <mavros_msgs/VehicleInfoGet.h>
-#include <mavros/utils.h>
+#include <mavros_msgs/ParamGet.h>
 #include <mavros_msgs/ParamSet.h>
+#include <mavros_msgs/CommandTOL.h>
+#include <mavros_msgs/Waypoint.h>
 #include <mavros_msgs/WaypointPush.h>
 #include <mavros_msgs/WaypointClear.h>
 #include <mavros_msgs/WaypointReached.h>
 #include <mavros_msgs/WaypointList.h>
-#include <mavros_msgs/Waypoint.h>
 
 #define FIRMWARE_VERSION_TYPE_DEV 0 /* development release | */
 #define FIRMWARE_VERSION_TYPE_ALPHA 64 /* alpha release | */
@@ -77,7 +78,6 @@ FixedWing::FixedWing()
     cur_pose_.pose.orientation.w = 1;
 
     ROS_INFO("FixedWing constructor with id [%d]", robot_id_);
-    // ROS_INFO("FixedWing: thresholds = %f %f", position_th_, orientation_th_);
 
     // Init ros communications
     ros::NodeHandle nh;
@@ -427,22 +427,12 @@ void FixedWing::land() {
     this->state_ = guessState();
 }
 
-void FixedWing::setVelocity(const Velocity& _vel) {
-    ROS_WARN("setVelocity command is not supported by the Mavros Fixed Wing backend!");
-}
-
 bool FixedWing::isReady() const {
     if (ros::param::has("~map_origin_geo")) {
         return mavros_has_geo_pose_;
     } else {
         return mavros_has_pose_ && (fabs(this->cur_pose_.pose.position.y) > 1e-8);  // Means the filter has converged!
     }
-}
-
-void FixedWing::setPose(const geometry_msgs::PoseStamped& _world) {
-    ROS_WARN("setVelocity command is not supported by the Mavros Fixed Wing backend!");
-
-    return;
 }
 
 void FixedWing::goToWaypoint(const Waypoint& _world) {
@@ -616,76 +606,9 @@ Pose FixedWing::pose() {
         return out;
 }
 
-Pose FixedWing::referencePose() {
-    Pose out;
-
-    out.pose.position.x = ref_pose_.pose.position.x + local_start_pos_[0];
-    out.pose.position.y = ref_pose_.pose.position.y + local_start_pos_[1];
-    out.pose.position.z = ref_pose_.pose.position.z + local_start_pos_[2];
-    out.pose.orientation = ref_pose_.pose.orientation;
-
-    if (pose_frame_id_ == "") {
-        // Default: local pose
-        out.header.frame_id = uav_home_frame_id_;
-    }
-    else {
-        // Publish pose in different frame
-        Pose aux = out;
-        geometry_msgs::TransformStamped transformToPoseFrame;
-        std::string pose_frame_id_map = "inv_" + pose_frame_id_;
-
-        if ( cached_transforms_.find(pose_frame_id_map) == cached_transforms_.end() ) {
-            // inv_pose_frame_id_ not found in cached_transforms_
-            try {
-                transformToPoseFrame = tf_buffer_.lookupTransform(pose_frame_id_,uav_home_frame_id_, ros::Time(0), ros::Duration(1.0));
-                cached_transforms_[pose_frame_id_map] = transformToPoseFrame; // Save transform in cache
-            }
-            catch (tf2::TransformException &ex) {
-                ROS_WARN("In referencePose: %s. Returning non transformed pose.", ex.what());
-                return out;
-            }
-        } else {
-            // found in cache
-            transformToPoseFrame = cached_transforms_[pose_frame_id_map];
-        }
-
-        tf2::doTransform(aux, out, transformToPoseFrame);
-        out.header.frame_id = pose_frame_id_;
-    }
-
-    out.header.stamp = ref_pose_.header.stamp;
-    return out;
-}
 
 Velocity FixedWing::velocity() const {
     return cur_vel_;
-}
-
-Odometry FixedWing::odometry() const {
-    Odometry odom;
-
-    odom.header.stamp = ros::Time::now();
-    odom.header.frame_id = uav_home_frame_id_;
-    odom.child_frame_id = uav_frame_id_;
-    odom.pose.pose.position.x = cur_pose_.pose.position.x + local_start_pos_[0];
-    odom.pose.pose.position.y = cur_pose_.pose.position.y + local_start_pos_[1];
-    odom.pose.pose.position.z = cur_pose_.pose.position.z + local_start_pos_[2];
-    odom.pose.pose.orientation = cur_pose_.pose.orientation;
-    odom.twist.twist = cur_vel_body_.twist;
-
-    return odom;
-}
-
-Transform FixedWing::transform() const {
-    Transform out;
-    out.header.stamp = ros::Time::now();
-    out.header.frame_id = uav_home_frame_id_;
-    out.child_frame_id = uav_frame_id_;
-    out.transform.translation.x = cur_pose_.pose.position.x + local_start_pos_[0];
-    out.transform.translation.y = cur_pose_.pose.position.y + local_start_pos_[1];
-    out.transform.translation.z = cur_pose_.pose.position.z + local_start_pos_[2];
-    out.transform.rotation = cur_pose_.pose.orientation;
-    return out;
 }
 
 void FixedWing::initHomeFrame() {

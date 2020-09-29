@@ -28,11 +28,6 @@
 #include <utility>
 #include <Eigen/Core>
 
-// UAL, avoid!!
-// #include <uav_abstraction_layer/ual.h>
-// #include <uav_abstraction_layer/backend.h>
-// #include <ual_backend_mavros/ual_backend_mavros.h>
-
 #include <mavros_msgs/CommandBool.h>
 #include <mavros_msgs/SetMode.h>
 #include <mavros_msgs/State.h>
@@ -40,15 +35,14 @@
 #include <mavros_msgs/GlobalPositionTarget.h>
 #include <mavros_msgs/WaypointList.h>
 #include <mavros_msgs/Waypoint.h>
+#include <geographic_msgs/GeoPoint.h>
+#include <geographic_msgs/GeoPoseStamped.h>
+#include <sensor_msgs/NavSatFix.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <geometry_msgs/TwistStamped.h>
 #include <geometry_msgs/TransformStamped.h>
-#include <geographic_msgs/GeoPoint.h>
-#include <geographic_msgs/GeoPoseStamped.h>
 #include <tf2_ros/transform_listener.h>
 #include <tf2_ros/static_transform_broadcaster.h>
-#include <sensor_msgs/NavSatFix.h>
-#include <nav_msgs/Odometry.h>
 
 namespace grvc { namespace fw_ns {
 
@@ -56,9 +50,6 @@ typedef geometry_msgs::PoseStamped      Pose;
 typedef geometry_msgs::PoseStamped      Waypoint;
 typedef sensor_msgs::NavSatFix          WaypointGeo;
 typedef geometry_msgs::TwistStamped     Velocity;
-typedef nav_msgs::Odometry              Odometry;
-typedef geometry_msgs::TransformStamped Transform;
-// typedef uint8_t                         State;
 
 enum State {
     UNINITIALIZED,
@@ -100,16 +91,6 @@ public:
     Pose pose();
     /// Latest velocity estimation of the robot
     Velocity velocity() const;
-    /// Latest odometry estimation of the robot
-    Odometry odometry() const;
-    /// Latest transform estimation of the robot
-    Transform transform() const;
-    /// Current reference pose
-    Pose referencePose();
-
-    /// Set pose
-    /// \param _pose target pose
-    void    setPose(const geometry_msgs::PoseStamped& _pose);
 
     /// Go to the specified waypoint, following a straight line
     /// \param _wp goal waypoint
@@ -127,8 +108,6 @@ public:
     /// Execute mission of a sequence of waypoints
     void	setMission(const std::vector<MissionElement>& _waypoint_element_list);
     /// Set velocities
-    /// \param _vel target velocity in world coordinates
-    void    setVelocity(const Velocity& _vel);
     /// Recover from manual flight mode
     /// Use it when FLYING uav is switched to manual mode and want to go BACK to auto.
     void    recoverFromManual();
@@ -139,14 +118,9 @@ private:
     void missionThreadLoop();
     void getAutopilotInformation();
     void initHomeFrame();
-    bool referencePoseReached();
     void setFlightMode(const std::string& _flight_mode);
     double updateParam(const std::string& _param_id);
     State guessState();
-    // bool takeOffPX4(double _height);
-    // bool takeOffAPM(double _height);
-    // void goToWaypointPX4(const Waypoint& _wp);
-    // void goToWaypointAPM(const Waypoint& _wp);
 
     // FW specifics
     void arm(const bool& _arm);
@@ -168,10 +142,8 @@ private:
 
     //WaypointList path_;
     geometry_msgs::PoseStamped  ref_pose_;
-    sensor_msgs::NavSatFix      ref_pose_global_;
     geometry_msgs::PoseStamped  cur_pose_;
     sensor_msgs::NavSatFix      cur_geo_pose_;
-    geometry_msgs::TwistStamped ref_vel_;
     geometry_msgs::TwistStamped cur_vel_;
     geometry_msgs::TwistStamped cur_vel_body_;
     mavros_msgs::State          mavros_state_;
@@ -199,9 +171,6 @@ private:
     eControlMode control_mode_ = eControlMode::NONE;
     bool mavros_has_pose_ = false;
     bool mavros_has_geo_pose_ = false;
-    float position_th_;
-    float orientation_th_;
-    float hold_pose_time_;
 
     /// Ros Communication
     ros::ServiceClient flight_mode_client_;
@@ -210,9 +179,9 @@ private:
     ros::ServiceClient set_param_client_;
     ros::ServiceClient push_mission_client_;
     ros::ServiceClient clear_mission_client_;
-    ros::Publisher mavros_ref_pose_pub_;
-    ros::Publisher mavros_ref_pose_global_pub_;
-    ros::Publisher mavros_ref_vel_pub_;
+    ros::Publisher mavros_ref_pose_pub_;        // Not publishing right now!!
+    ros::Publisher mavros_ref_pose_global_pub_; // Not publishing right now!!
+    ros::Publisher mavros_ref_vel_pub_;         // Not publishing right now!!
     ros::Subscriber mavros_cur_pose_sub_;
     ros::Subscriber mavros_cur_geo_pose_sub_;
     ros::Subscriber mavros_cur_vel_sub_;
@@ -234,7 +203,6 @@ private:
     std::map <std::string, geometry_msgs::TransformStamped> cached_transforms_;
     std::map<std::string, double> mavros_params_;
     Eigen::Vector3d local_start_pos_;
-    ros::Time last_command_time_;
 
     std::thread mission_thread_;
     double mission_thread_frequency_;
