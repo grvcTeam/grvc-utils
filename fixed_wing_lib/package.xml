@@ -9,21 +9,21 @@
   <license>MIT</license>
 
   <buildtool_depend>catkin</buildtool_depend>
+  <build_depend>message_generation</build_depend>
   <build_depend>mavros</build_depend>
   <build_depend>mavros_msgs</build_depend>
   <build_depend>roscpp</build_depend>
-  <build_depend>ual_backend_mavros</build_depend>
-  <build_depend>uav_abstraction_layer</build_depend>
+  <build_depend>geodesy</build_depend>
+  <build_export_depend>message_runtime</build_export_depend>
   <build_export_depend>mavros</build_export_depend>
   <build_export_depend>mavros_msgs</build_export_depend>
   <build_export_depend>roscpp</build_export_depend>
-  <build_export_depend>ual_backend_mavros</build_export_depend>
-  <build_export_depend>uav_abstraction_layer</build_export_depend>
+  <build_export_depend>geodesy</build_export_depend>
+  <exec_depend>message_runtime</exec_depend>
   <exec_depend>mavros</exec_depend>
   <exec_depend>mavros_msgs</exec_depend>
   <exec_depend>roscpp</exec_depend>
-  <exec_depend>ual_backend_mavros</exec_depend>
-  <exec_depend>uav_abstraction_layer</exec_depend>
+  <exec_depend>geodesy</exec_depend>
 
   <export>
     <!-- Other tools can request additional information be placed here -->

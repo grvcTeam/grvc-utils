@@ -24,8 +24,8 @@
 #include <ros/ros.h>
 #include <thread>
 #include <atomic>
+#include <mutex>
 #include <vector>
-#include <utility>
 #include <Eigen/Core>
 
 #include <mavros_msgs/CommandBool.h>
@@ -43,76 +43,74 @@
 #include <geometry_msgs/TransformStamped.h>
 #include <tf2_ros/transform_listener.h>
 #include <tf2_ros/static_transform_broadcaster.h>
+#include <std_msgs/Int8.h>
+#include <fixed_wing_lib/MissionElement.h>
+#include <fixed_wing_lib/ParamFloat.h>
+#include <fixed_wing_lib/State.h>
+#include <fixed_wing_lib/SetHome.h>
+#include <fixed_wing_lib/SetMission.h>
 
 namespace grvc { namespace fw_ns {
-
-typedef geometry_msgs::PoseStamped      Pose;
-typedef geometry_msgs::PoseStamped      Waypoint;
-typedef sensor_msgs::NavSatFix          WaypointGeo;
-typedef geometry_msgs::TwistStamped     Velocity;
-
-enum State {
-    UNINITIALIZED,
-    LANDED_DISARMED,
-    LANDED_ARMED,
-    TAKING_OFF,
-    FLYING_AUTO,
-    FLYING_MANUAL,
-    LANDING,
-};
-
-enum MissionElementType {       // Possible mission waypoint types
-    TAKEOFF_POSE,
-    TAKEOFF_AUX,
-    PASS,
-    LOITER_UNLIMITED,
-    LOITER_TURNS,
-    LOITER_TIME,
-    LOITER_HEIGHT,
-    LAND_POSE,
-    LAND_AUX,
-};
-
-struct MissionElement {
-    std::vector<geometry_msgs::PoseStamped> waypoints;
-    std::vector< std::pair<std::string,float> > params;     // name - value
-    MissionElementType type;
-};
 
 class FixedWing {
 
 public:
+
     FixedWing();
     ~FixedWing();
 
-    /// Library is initialized and ready to run tasks?
+    // Wrap a function to make it thread-safe
+    template <typename Callable, typename ... Args>
+    bool threadSafeCall(Callable&& _fn, Args&& ... _args) {
+        // Only one thread can lock
+        if (running_mutex_.try_lock()) {
+            running_task_ = true;  // set running after locking
+            std::bind(_fn, this, std::forward<Args>(_args)...)();
+            running_mutex_.unlock();
+            running_task_ = false;  // reset it after unlocking
+            return true;  // Call succeeded
+        } else {
+            return false;  // Call failed
+        }
+    }
+
+    // Library is initialized and ready to run tasks?
     bool isReady() const;
-    /// Latest pose estimation of the robot
-    Pose pose();
-    /// Latest velocity estimation of the robot
-    Velocity velocity() const;
+    // Is it idle?
+    bool isIdle();
 
-    /// Go to the specified waypoint, following a straight line
-    /// \param _wp goal waypoint
-    void	goToWaypoint(const Waypoint& _wp);
+    // Latest pose estimation of the robot
+    geometry_msgs::PoseStamped pose();
+    // Latest velocity estimation of the robot
+    geometry_msgs::TwistStamped velocity() const { return cur_vel_; }
 
-    /// Go to the specified waypoint in geographic coordinates, following a straight line
-    /// \param _wp goal waypoint in geographic coordinates
-    void	goToWaypointGeo(const WaypointGeo& _wp);
+    // Set home position
+    bool setHome(bool _set_z);
 
-    /// Perform a take off maneuver
-    /// \param _height target height that must be reached to consider the take off complete
-    void    takeOff(double _height);
-    /// Land on the current position.
-    void	land();
-    /// Execute mission of a sequence of waypoints
-    void	setMission(const std::vector<MissionElement>& _waypoint_element_list);
-    /// Set velocities
-    /// Recover from manual flight mode
-    /// Use it when FLYING uav is switched to manual mode and want to go BACK to auto.
-    void    recoverFromManual();
-    /// Set home position
-    void    setHome(bool _set_z);
+    // Function to execute a mission of a sequence of waypoints inside a safe thread call
+    void setMissionFunction(const std::vector<fixed_wing_lib::MissionElement>& _waypoint_element_list);
+
+    // Execute specified mission
+    // \param waypoint set indicates the waypoint groups with its parameters
+    // \param _blocking indicates if function call is blocking (default = true)
+    bool setMission(const std::vector<fixed_wing_lib::MissionElement>& _waypoint_element_list, bool _blocking = true);
+
+    // Current robot state
+    fixed_wing_lib::State state() {
+        fixed_wing_lib::State output;
+        output.state = this->state_;
+        return output;
+    };
+
+    // Current waypoint of the list that define de mission
+    std_msgs::Int8 missionState() {
+        std_msgs::Int8 output;
+        output.data = this->mission_state_;
+        return output;
+    };
+
+    // Cancel execution of the current task
+    void abort(bool _freeze = true);
 
 private:
     void missionThreadLoop();
@@ -120,19 +118,19 @@ private:
     void initHomeFrame();
     void setFlightMode(const std::string& _flight_mode);
     double updateParam(const std::string& _param_id);
-    State guessState();
+    fixed_wing_lib::State guessState();
 
     // FW specifics
     void arm(const bool& _arm);
     void setParam(const std::string& _param_id,const int& _param_value);
     bool pushMission(const mavros_msgs::WaypointList& _wp_list);
     void clearMission();
-    void addTakeOffWp(mavros_msgs::WaypointList& _wp_list, const MissionElement& _waypoint_element, const int& _wp_set_index);
-    void addPassWpList(mavros_msgs::WaypointList& _wp_list, const MissionElement& _waypoint_element, const int& _wp_set_index);
-    void addLoiterWpList(mavros_msgs::WaypointList& _wp_list, const MissionElement& _waypoint_element, const int& _wp_set_index);
-    void addLandWpList(mavros_msgs::WaypointList& _wp_list, const MissionElement& _waypoint_element, const int& _wp_set_index);
-    void addSpeedWpList(mavros_msgs::WaypointList& _wp_list, const MissionElement& _waypoint_element, const int& _wp_set_index);
-    std::vector<geographic_msgs::GeoPoseStamped> uniformizeSpatialField( const MissionElement& _waypoint_element);
+    void addTakeOffWp(mavros_msgs::WaypointList& _wp_list, const fixed_wing_lib::MissionElement& _waypoint_element, const int& _wp_set_index);
+    void addPassWpList(mavros_msgs::WaypointList& _wp_list, const fixed_wing_lib::MissionElement& _waypoint_element, const int& _wp_set_index);
+    void addLoiterWpList(mavros_msgs::WaypointList& _wp_list, const fixed_wing_lib::MissionElement& _waypoint_element, const int& _wp_set_index);
+    void addLandWpList(mavros_msgs::WaypointList& _wp_list, const fixed_wing_lib::MissionElement& _waypoint_element, const int& _wp_set_index);
+    void addSpeedWpList(mavros_msgs::WaypointList& _wp_list, const fixed_wing_lib::MissionElement& _waypoint_element, const int& _wp_set_index);
+    std::vector<geographic_msgs::GeoPoseStamped> uniformizeSpatialField( const fixed_wing_lib::MissionElement& _waypoint_element);
     geographic_msgs::GeoPoseStamped poseStampedtoGeoPoseStamped(const geometry_msgs::PoseStamped& _posestamped );
     geometry_msgs::PoseStamped geoPoseStampedtoPoseStamped(const geographic_msgs::GeoPoseStamped _geoposestamped );
     mavros_msgs::Waypoint geoPoseStampedtoGlobalWaypoint(const geographic_msgs::GeoPoseStamped& _geoposestamped );
@@ -140,60 +138,48 @@ private:
     void checkMissionParams(const std::map<std::string, float>& _existing_params_map, const std::vector<std::string>& _required_params, const int& _wp_set_index);
     void initMission();
 
-    //WaypointList path_;
-    geometry_msgs::PoseStamped  ref_pose_;
+    // WaypointList path_;
     geometry_msgs::PoseStamped  cur_pose_;
     sensor_msgs::NavSatFix      cur_geo_pose_;
     geometry_msgs::TwistStamped cur_vel_;
-    geometry_msgs::TwistStamped cur_vel_body_;
     mavros_msgs::State          mavros_state_;
     mavros_msgs::ExtendedState  mavros_extended_state_;
 
-    //Mission
-    int  mavros_reached_wp_;
-    mavros_msgs::WaypointList  mavros_cur_mission_;
+    // Mission
+    mavros_msgs::WaypointList mavros_cur_mission_;
     geographic_msgs::GeoPoint origin_geo_;
     std::vector<int> takeoff_wps_on_mission_;
     std::vector<int> land_wps_on_mission_;
-    float mission_aux_height_;
-    float mission_aux_distance_;
-    float mission_takeoff_minimum_pitch_;
-    float mission_loit_heading_;
-    float mission_loit_radius_;
-    float mission_loit_forward_moving_;
-    float mission_land_precision_mode_;
-    float mission_land_abort_alt_;
-    float mission_pass_orbit_distance_;
-    float mission_pass_acceptance_radius_;
 
-    //Control
-    enum class eControlMode {LOCAL_VEL, LOCAL_POSE, GLOBAL_POSE, NONE};
-    eControlMode control_mode_ = eControlMode::NONE;
+    // Control
     bool mavros_has_pose_ = false;
     bool mavros_has_geo_pose_ = false;
 
-    /// Ros Communication
+    // Ros Communication
     ros::ServiceClient flight_mode_client_;
     ros::ServiceClient arming_client_;
     ros::ServiceClient get_param_client_;
     ros::ServiceClient set_param_client_;
     ros::ServiceClient push_mission_client_;
     ros::ServiceClient clear_mission_client_;
-    ros::Publisher mavros_ref_pose_pub_;        // Not publishing right now!!
-    ros::Publisher mavros_ref_pose_global_pub_; // Not publishing right now!!
-    ros::Publisher mavros_ref_vel_pub_;         // Not publishing right now!!
+    ros::ServiceServer set_mission_service_;
+    ros::ServiceServer set_home_service_;
     ros::Subscriber mavros_cur_pose_sub_;
     ros::Subscriber mavros_cur_geo_pose_sub_;
     ros::Subscriber mavros_cur_vel_sub_;
-    ros::Subscriber mavros_cur_vel_body_sub_;
     ros::Subscriber mavros_cur_state_sub_;
     ros::Subscriber mavros_cur_extended_state_sub_;
+    ros::Publisher pose_pub_;
+    ros::Publisher pose_geo_pub_;
+    ros::Publisher velocity_pub_;
+    ros::Publisher state_pub_;
+    ros::Publisher mission_state_pub_;
     tf2_ros::Buffer tf_buffer_;
     tf2_ros::TransformListener tf_listener_;
-    ros::Subscriber mavros_reached_wp_sub_;
     ros::Subscriber mavros_cur_mission_sub_;
 
     int robot_id_;
+    bool id_is_unique_;
     enum struct AutopilotType {PX4, APM, UNKNOWN};
     AutopilotType autopilot_type_ = AutopilotType::UNKNOWN;
     std::string pose_frame_id_;
@@ -210,9 +196,27 @@ private:
     bool calling_takeoff_ = false;
     bool calling_land_ = false;
 
-    std::atomic<State> state_ = {UNINITIALIZED};
+    std::atomic<uint8_t> state_ = {fixed_wing_lib::State::UNINITIALIZED};
 
     int mission_state_ = 0;
+
+    // Abort flag
+    // If you want your task to be abortable, check its value periodically
+    std::atomic<bool> abort_ = {false};
+
+    // Freeze flag
+    // When aborting a task, freezes the platform if it is true
+    std::atomic<bool> freeze_ = {false};
+
+    // Simplest state-machine model: idle/running
+    // Implemented via mutex-locking
+    std::mutex running_mutex_;
+    std::atomic<bool> running_task_ = {false};
+
+    // Ros spinning thread
+    std::thread spin_thread_;
+
+    std::thread server_thread_;
 };
 
 }}	// namespace grvc::fw_ns
