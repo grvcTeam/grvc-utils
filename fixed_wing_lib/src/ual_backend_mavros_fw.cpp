@@ -218,7 +218,7 @@ void BackendMavrosFW::missionThreadLoop(){
                 calling_land_ = false;
             }
         }
-        
+
         // State update
         this->state_ = guessState();
 

@@ -48,7 +48,6 @@
 #include <geographic_msgs/GeoPoint.h>
 #include <geographic_msgs/GeoPoseStamped.h>
 
-//UAL messages (TRASLADAR A ESTE BACKEND?)
 #include <uav_abstraction_layer/MissionElement.h>
 #include <uav_abstraction_layer/ParamFloat.h>
 

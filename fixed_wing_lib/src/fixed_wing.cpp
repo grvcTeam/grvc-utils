@@ -215,7 +215,7 @@ FixedWing::FixedWing()
 
             // Publish @ 30Hz default
             double fw_pub_rate;
-            ros::param::param<double>("~pub_rate", fw_pub_rate, 30.0);
+            ros::param::param<double>("~fw_pub_rate", fw_pub_rate, 30.0);
             ros::Rate loop_rate(fw_pub_rate);
             ROS_INFO("FixedWing server [%d] running!", robot_id_);
             while (ros::ok()) {
@@ -496,7 +496,7 @@ void FixedWing::initHomeFrame() {
     }
     std::string parent_frame;
     ros::param::param<std::string>("~home_pose_parent_frame", parent_frame, "map");
-    
+
     std::vector<double> home_pose(3, 0.0);
     if (ros::param::has("~home_pose")) {
         ros::param::get("~home_pose",home_pose);
@@ -920,7 +920,7 @@ void FixedWing::addLandWpList(mavros_msgs::WaypointList& _wp_list, const fixed_w
     }
 
     wp2.frame = 3;      // FRAME_GLOBAL_REL_ALT
-    wp2.command = 31;       // MAV_CMD_NAV_LOITER_TO_ALT
+    wp2.command = 31;   // MAV_CMD_NAV_LOITER_TO_ALT
     wp2.is_current = false;
     wp2.autocontinue = true;
 

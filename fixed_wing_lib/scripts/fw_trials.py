@@ -8,8 +8,8 @@ from geometry_msgs.msg import *
 from sensor_msgs.msg import *
 from geographic_msgs.msg import *
 from std_srvs.srv import *
-from uav_abstraction_layer.srv import *
-from uav_abstraction_layer.msg import *
+from fixed_wing_lib.srv import *
+from fixed_wing_lib.msg import *
 
 class FwQgc(object):
     def __init__(self):
@@ -138,14 +138,14 @@ class FwQgc(object):
 
         return wps
 
-        
+
     def sendMission(self, wps):
 
         mission_srv_request = SetMissionRequest()
         mission_srv_request.mission_elements = wps
         mission_srv_request.blocking = True
 
-        self.serverClient(mission_srv_request, "/ual/set_mission", SetMission)
+        self.serverClient(mission_srv_request, "/fw/set_mission", SetMission)
 
 
 
@@ -163,7 +163,7 @@ class FwQgc(object):
                 print(response)
 
             return response
-        
+
         except rospy.ServiceException:
             return "Error"
 
