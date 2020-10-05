@@ -93,7 +93,7 @@ FixedWing::FixedWing()
 
     // Init ros communications
     ros::NodeHandle nh;
-    std::string mavros_ns = "mavros";
+    std::string mavros_ns = "/mavros";
     std::string set_mode_srv = mavros_ns + "/set_mode";
     std::string arming_srv = mavros_ns + "/cmd/arming";
     std::string get_param_srv = mavros_ns + "/param/get";
@@ -155,6 +155,12 @@ FixedWing::FixedWing()
             mission_state_ = this->mavros_cur_mission_.current_seq;
     });
 
+    // Make communications spin!
+    spin_thread_ = std::thread([this]() {
+        ros::MultiThreadedSpinner spinner(2); // Use 2 threads
+        spinner.spin();
+    });
+
     // Wait until mavros is connected
     while (!mavros_state_.connected && ros::ok()) {
         std::this_thread::sleep_for(std::chrono::milliseconds(200));
@@ -176,12 +182,6 @@ FixedWing::FixedWing()
     // Updating here is non-sense as service seems to be slow in waking up
 
     initMission();
-
-    // Make communications spin!
-    spin_thread_ = std::thread([this]() {
-        ros::MultiThreadedSpinner spinner(2); // Use 2 threads
-        spinner.spin();
-    });
 
     // Start server if explicitly asked
     std::string server_mode;
@@ -609,8 +609,8 @@ void FixedWing::setParam(const std::string& _param_id, const int& _param_value) 
 void FixedWing::getAutopilotInformation() {
     // Call vehicle information service
     ros::NodeHandle nh;
-    ros::ServiceClient vehicle_information_cl = nh.serviceClient<mavros_msgs::VehicleInfoGet>("mavros/vehicle_info_get");
-    ros::service::waitForService("mavros/vehicle_info_get");
+    ros::ServiceClient vehicle_information_cl = nh.serviceClient<mavros_msgs::VehicleInfoGet>("/mavros/vehicle_info_get");
+    ros::service::waitForService("/mavros/vehicle_info_get");
     std::this_thread::sleep_for(std::chrono::milliseconds(1000));
     mavros_msgs::VehicleInfoGet vehicle_info_srv;
     if (!vehicle_information_cl.call(vehicle_info_srv)) {

@@ -145,7 +145,7 @@ class FwQgc(object):
         mission_srv_request.mission_elements = wps
         mission_srv_request.blocking = True
 
-        self.serverClient(mission_srv_request, "/fw/set_mission", SetMission)
+        self.serverClient(mission_srv_request, "/uav_1/fw/set_mission", SetMission)
 
 
 
