@@ -1,4 +1,3 @@
 MissionElement[] mission_elements
-bool blocking
 ---
 bool success

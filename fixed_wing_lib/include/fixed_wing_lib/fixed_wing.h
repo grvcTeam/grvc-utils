@@ -77,7 +77,7 @@ public:
     // Library is initialized and ready to run tasks?
     bool isReady() const;
     // Is it idle?
-    bool isIdle();
+    bool isIdle() { return !running_task_; }
 
     // Latest pose estimation of the robot
     geometry_msgs::PoseStamped pose();
@@ -87,13 +87,9 @@ public:
     // Set home position
     bool setHome(bool _set_z);
 
-    // Function to execute a mission of a sequence of waypoints inside a safe thread call
-    void setMissionFunction(const std::vector<fixed_wing_lib::MissionElement>& _waypoint_element_list);
-
     // Execute specified mission
     // \param waypoint set indicates the waypoint groups with its parameters
-    // \param _blocking indicates if function call is blocking (default = true)
-    bool setMission(const std::vector<fixed_wing_lib::MissionElement>& _waypoint_element_list, bool _blocking = true);
+    bool setMission(const std::vector<fixed_wing_lib::MissionElement>& _waypoint_element_list);
 
     // Current robot state
     fixed_wing_lib::State state() {
@@ -137,6 +133,7 @@ private:
     float getMissionYaw(const geometry_msgs::Quaternion& _quat);
     void checkMissionParams(const std::map<std::string, float>& _existing_params_map, const std::vector<std::string>& _required_params, const int& _wp_set_index);
     void initMission();
+    void setMissionFunction(const std::vector<fixed_wing_lib::MissionElement>& _waypoint_element_list); // Function to execute a mission of a sequence of waypoints inside a safe thread call
 
     // WaypointList path_;
     geometry_msgs::PoseStamped  cur_pose_;
@@ -198,7 +195,7 @@ private:
 
     std::atomic<uint8_t> state_ = {fixed_wing_lib::State::UNINITIALIZED};
 
-    int mission_state_ = 0;
+    int mission_state_ = 0;     // seq nr of the currently active waypoint of the mission: waypoints[current_seq].is_current == True.
 
     // Abort flag
     // If you want your task to be abortable, check its value periodically

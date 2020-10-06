@@ -93,7 +93,7 @@ FixedWing::FixedWing()
 
     // Init ros communications
     ros::NodeHandle nh;
-    std::string mavros_ns = "/mavros";
+    std::string mavros_ns = "mavros";
     std::string set_mode_srv = mavros_ns + "/set_mode";
     std::string arming_srv = mavros_ns + "/cmd/arming";
     std::string get_param_srv = mavros_ns + "/param/get";
@@ -176,12 +176,9 @@ FixedWing::FixedWing()
 
     // Client to get parameters from mavros and required default values
     get_param_client_ = nh.serviceClient<mavros_msgs::ParamGet>(get_param_srv.c_str());
-    mavros_params_["NAV_DLL_ACT"]   =   1;  // [?]   Default value
-    mavros_params_["MIS_DIST_1PS"]   =   900;  // [m]   Default value
-    mavros_params_["MIS_DIST_WPS"]   =   900;  // [m]   Default value
     // Updating here is non-sense as service seems to be slow in waking up
 
-    initMission();
+    // initMission();
 
     // Start server if explicitly asked
     std::string server_mode;
@@ -201,7 +198,7 @@ FixedWing::FixedWing()
             ros::NodeHandle nh;
             set_mission_service_ = nh.advertiseService<fixed_wing_lib::SetMission::Request, fixed_wing_lib::SetMission::Response>( set_mission_srv,
                 [this](fixed_wing_lib::SetMission::Request &req, fixed_wing_lib::SetMission::Response &res) {
-                return this->setMission(req.mission_elements, req.blocking);
+                return this->setMission(req.mission_elements);
             });
             set_home_service_ = nh.advertiseService<fixed_wing_lib::SetHome::Request, fixed_wing_lib::SetHome::Response>( set_home_srv,
                 [this](fixed_wing_lib::SetHome::Request &req, fixed_wing_lib::SetHome::Response &res) {
@@ -295,9 +292,11 @@ void FixedWing::initMission() {
     setFlightMode("AUTO.LAND");
     arm(false); 
     arm(true);      //TODO(Jose Andres): Should not arm in this node, but otherwise, swithc to AUTO.MISSION won't be allowed
-    setParam("NAV_DLL_ACT",0); // To switch mode
-    setParam("MIS_DIST_1WP",0);
-    setParam("MIS_DIST_WPS",0); // Minimum distance between wps. default 900m
+
+    // The following param need to be set in the px4cmd, setting them from here is not possible for MAVROS (in QGroundStation is possible, rosservice call doesn't work too):
+    // setParam("NAV_DLL_ACT",0); // To switch mode
+    // setParam("MIS_DIST_1WP",0);
+    // setParam("MIS_DIST_WPS",0); // Minimum distance between wps. default 900m
 }
 
 
@@ -310,7 +309,7 @@ void FixedWing::setFlightMode(const std::string& _flight_mode) {
         if (!flight_mode_client_.call(flight_mode_service)) {
             ROS_ERROR("Error in set flight mode [%s] service calling!", _flight_mode.c_str());
         }
-        std::this_thread::sleep_for(std::chrono::milliseconds(300));
+        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 #ifdef MAVROS_VERSION_BELOW_0_20_0
         ROS_INFO("Set flight mode [%s] response.success = %s", _flight_mode.c_str(), \
             flight_mode_service.response.success ? "true" : "false");
@@ -425,7 +424,7 @@ void FixedWing::setMissionFunction(const std::vector<fixed_wing_lib::MissionElem
 }
 
 
-bool FixedWing::setMission(const std::vector<fixed_wing_lib::MissionElement>& _waypoint_set_list, bool blocking) {
+bool FixedWing::setMission(const std::vector<fixed_wing_lib::MissionElement>& _waypoint_set_list) {
     if ((this->state().state != fixed_wing_lib::State::LANDED_DISARMED) & (this->state().state != fixed_wing_lib::State::LANDED_ARMED) & (this->state().state != fixed_wing_lib::State::FLYING_AUTO)) {
         ROS_ERROR("Unable to setMission: not LANDED_DISARMED, LANDED_ARMED or FLYING_AUTO!");
         return false;
@@ -434,7 +433,6 @@ bool FixedWing::setMission(const std::vector<fixed_wing_lib::MissionElement>& _w
     // Override any previous FLYING function
     if (!this->isIdle()) { this->abort(); }
 
-    // Function is non-blocking in backend TODO: non-thread-safe-call?
     this->threadSafeCall(&FixedWing::setMissionFunction, _waypoint_set_list);
     return true;
 }
@@ -533,7 +531,7 @@ void FixedWing::initHomeFrame() {
         origin_geo_.latitude = map_origin_geo[0];
         origin_geo_.longitude = map_origin_geo[1];
         origin_geo_.altitude = 0; //map_origin_geo[2];
-        
+
     }
 
     geometry_msgs::TransformStamped static_transformStamped;
@@ -560,7 +558,7 @@ void FixedWing::initHomeFrame() {
     }
 
     static_tf_broadcaster_ = new tf2_ros::StaticTransformBroadcaster();
-    static_tf_broadcaster_->sendTransform(static_transformStamped);
+    static_tf_broadcaster_->sendTransform(static_transformStamped);     // Needed?
 }
 
 
@@ -609,8 +607,8 @@ void FixedWing::setParam(const std::string& _param_id, const int& _param_value) 
 void FixedWing::getAutopilotInformation() {
     // Call vehicle information service
     ros::NodeHandle nh;
-    ros::ServiceClient vehicle_information_cl = nh.serviceClient<mavros_msgs::VehicleInfoGet>("/mavros/vehicle_info_get");
-    ros::service::waitForService("/mavros/vehicle_info_get");
+    ros::ServiceClient vehicle_information_cl = nh.serviceClient<mavros_msgs::VehicleInfoGet>("mavros/vehicle_info_get");
+    ros::service::waitForService("mavros/vehicle_info_get");
     std::this_thread::sleep_for(std::chrono::milliseconds(1000));
     mavros_msgs::VehicleInfoGet vehicle_info_srv;
     if (!vehicle_information_cl.call(vehicle_info_srv)) {
@@ -740,8 +738,8 @@ void FixedWing::addTakeOffWp(mavros_msgs::WaypointList& _wp_list, const fixed_wi
         wp = geoPoseStampedtoGlobalWaypoint(poseStampedtoGeoPoseStamped(aux_pose));
     }
 
-    wp.frame = 3;      // FRAME_GLOBAL_REL_ALT
-    wp.command = 22;        // MAV_CMD_NAV_TAKEOFF
+    wp.frame = 3;       // FRAME_GLOBAL_REL_ALT
+    wp.command = 22;    // MAV_CMD_NAV_TAKEOFF
     wp.is_current = true;
     wp.autocontinue = true;
 
@@ -967,15 +965,15 @@ void FixedWing::addSpeedWpList(mavros_msgs::WaypointList& _wp_list, const fixed_
     checkMissionParams(params_map, required_params, _wp_set_index);
 
     mavros_msgs::Waypoint wp;
-    wp.frame = 2;       // FRAME_MISSION
+    wp.frame = 2;           // FRAME_MISSION
     wp.command = 178;       // MAV_CMD_DO_CHANGE_SPEED
     wp.is_current = false;
     wp.autocontinue = true;
 
-    wp.param1 = 1.0;                                            // Speed type (0=Airspeed, 1=Ground Speed, 2=Climb Speed, 3=Descent Speed)
-    wp.param2 = params_map["speed"];                            // Speed (-1 indicates no change)
-    wp.param3 = -1.0;                                           // Throttle (-1 indicates no change)
-    wp.param4 = 0.0;                                            // Relative (0: absolute, 1: relative)
+    wp.param1 = 1.0;                    // Speed type (0=Airspeed, 1=Ground Speed, 2=Climb Speed, 3=Descent Speed)
+    wp.param2 = params_map["speed"];    // Speed (-1 indicates no change)
+    wp.param3 = -1.0;                   // Throttle (-1 indicates no change)
+    wp.param4 = 0.0;                    // Relative (0: absolute, 1: relative)
     _wp_list.waypoints.push_back(wp);
 
 }
@@ -1109,11 +1107,6 @@ void FixedWing::checkMissionParams(const std::map<std::string, float>& _existing
             ROS_ERROR("Warn in [%d]-th waypoint set, [%s] param not provided!", _wp_set_index, _param.c_str());
         }
     }
-}
-
-
-bool FixedWing::isIdle() {
-    return !running_task_;
 }
 
 
