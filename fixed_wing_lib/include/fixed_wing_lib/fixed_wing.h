@@ -44,11 +44,11 @@
 #include <tf2_ros/transform_listener.h>
 #include <tf2_ros/static_transform_broadcaster.h>
 #include <std_msgs/Int8.h>
-#include <fixed_wing_lib/MissionElement.h>
-#include <fixed_wing_lib/ParamFloat.h>
 #include <fixed_wing_lib/State.h>
 #include <fixed_wing_lib/SetHome.h>
-#include <fixed_wing_lib/SetMission.h>
+// #include <fixed_wing_lib/MissionElement.h>
+// #include <fixed_wing_lib/ParamFloat.h>
+// #include <fixed_wing_lib/SetMission.h>
 
 namespace grvc { namespace fw_ns {
 
@@ -59,57 +59,48 @@ public:
     FixedWing();
     ~FixedWing();
 
-    // Wrap a function to make it thread-safe
-    template <typename Callable, typename ... Args>
-    bool threadSafeCall(Callable&& _fn, Args&& ... _args) {
-        // Only one thread can lock
-        if (running_mutex_.try_lock()) {
-            running_task_ = true;  // set running after locking
-            std::bind(_fn, this, std::forward<Args>(_args)...)();
-            running_mutex_.unlock();
-            running_task_ = false;  // reset it after unlocking
-            return true;  // Call succeeded
-        } else {
-            return false;  // Call failed
-        }
-    }
-
-    // Library is initialized and ready to run tasks?
-    bool isReady() const;
-    // Is it idle?
-    bool isIdle() { return !running_task_; }
-
     // Latest pose estimation of the robot
     geometry_msgs::PoseStamped pose();
+    sensor_msgs::NavSatFix geoPose() const { return cur_geo_pose_; }
     // Latest velocity estimation of the robot
     geometry_msgs::TwistStamped velocity() const { return cur_vel_; }
 
-    // Set home position
-    bool setHome(bool _set_z);
-
-    // Execute specified mission
-    // \param waypoint set indicates the waypoint groups with its parameters
-    bool setMission(const std::vector<fixed_wing_lib::MissionElement>& _waypoint_element_list);
-
-    // Current robot state
-    fixed_wing_lib::State state() {
+    // Current uav state
+    fixed_wing_lib::State state() const {
         fixed_wing_lib::State output;
         output.state = this->state_;
         return output;
     };
 
     // Current waypoint of the list that define de mission
-    std_msgs::Int8 missionState() {
+    std_msgs::Int8 activeWaypoint() const {
         std_msgs::Int8 output;
-        output.data = this->mission_state_;
+        output.data = this->active_waypoint_;
         return output;
     };
 
-    // Cancel execution of the current task
-    void abort(bool _freeze = true);
+    // Set home position
+    bool setHome(bool _set_z);
+
+    // Execute specified mission
+    // \param waypoint set indicates the waypoint groups with its parameters
+    // bool setMission(const std::vector<fixed_wing_lib::MissionElement>& _waypoint_element_list);
+
+    bool pushMission();
+    void clearMission();
+    void addTakeOffWp(const geometry_msgs::PoseStamped& _takeoff_pose, float _minimum_pitch, float _aux_distance=-1, float _aux_height=-1, float _yaw_angle=-1);
+    void addPassWpList(const std::vector<geometry_msgs::PoseStamped>& _pass_poses, float _acceptance_radius, float _orbit_distance, float _speed=-1);
+    void addLoiterWpList(const std::vector<geometry_msgs::PoseStamped>& _loiter_poses, float _radius, float _forward_moving=-1, float _turns=-1, float _time=-1, float _heading=-1, float _speed=-1);
+    void addLandWpList(const geometry_msgs::PoseStamped& _land_pose, float _loit_heading, float _loit_radius, float _loit_forward_moving, float _abort_alt, float _precision_mode, float _aux_distance=-1, float _aux_height=-1, float _aux_angle=-1);
+    void addSpeedWpList(float _speed);
+    // check mission? If valid or not. Will depend of if it's flying already or not. Public or just run it before sending it?
+    // Display current mission in a string.
 
 private:
-    void missionThreadLoop();
+    // Library is initialized and ready to send missions?
+    bool isReady() const;
+
+    void stateThreadLoop();
     void getAutopilotInformation();
     void initHomeFrame();
     void setFlightMode(const std::string& _flight_mode);
@@ -117,23 +108,14 @@ private:
     fixed_wing_lib::State guessState();
 
     // FW specifics
-    void arm(const bool& _arm);
-    void setParam(const std::string& _param_id,const int& _param_value);
-    bool pushMission(const mavros_msgs::WaypointList& _wp_list);
-    void clearMission();
-    void addTakeOffWp(mavros_msgs::WaypointList& _wp_list, const fixed_wing_lib::MissionElement& _waypoint_element, const int& _wp_set_index);
-    void addPassWpList(mavros_msgs::WaypointList& _wp_list, const fixed_wing_lib::MissionElement& _waypoint_element, const int& _wp_set_index);
-    void addLoiterWpList(mavros_msgs::WaypointList& _wp_list, const fixed_wing_lib::MissionElement& _waypoint_element, const int& _wp_set_index);
-    void addLandWpList(mavros_msgs::WaypointList& _wp_list, const fixed_wing_lib::MissionElement& _waypoint_element, const int& _wp_set_index);
-    void addSpeedWpList(mavros_msgs::WaypointList& _wp_list, const fixed_wing_lib::MissionElement& _waypoint_element, const int& _wp_set_index);
-    std::vector<geographic_msgs::GeoPoseStamped> uniformizeSpatialField( const fixed_wing_lib::MissionElement& _waypoint_element);
+    void arm(bool _arm);
+    void setParam(const std::string& _param_id,int _param_value);
+    std::vector<geographic_msgs::GeoPoseStamped> uniformizeSpatialField(const std::vector<geometry_msgs::PoseStamped>& _posestamped_list);
     geographic_msgs::GeoPoseStamped poseStampedtoGeoPoseStamped(const geometry_msgs::PoseStamped& _posestamped );
     geometry_msgs::PoseStamped geoPoseStampedtoPoseStamped(const geographic_msgs::GeoPoseStamped _geoposestamped );
     mavros_msgs::Waypoint geoPoseStampedtoGlobalWaypoint(const geographic_msgs::GeoPoseStamped& _geoposestamped );
     float getMissionYaw(const geometry_msgs::Quaternion& _quat);
-    void checkMissionParams(const std::map<std::string, float>& _existing_params_map, const std::vector<std::string>& _required_params, const int& _wp_set_index);
     void initMission();
-    void setMissionFunction(const std::vector<fixed_wing_lib::MissionElement>& _waypoint_element_list); // Function to execute a mission of a sequence of waypoints inside a safe thread call
 
     // WaypointList path_;
     geometry_msgs::PoseStamped  cur_pose_;
@@ -141,6 +123,7 @@ private:
     geometry_msgs::TwistStamped cur_vel_;
     mavros_msgs::State          mavros_state_;
     mavros_msgs::ExtendedState  mavros_extended_state_;
+    mavros_msgs::WaypointList   mission_waypointlist_;      // The mission that will be sent to the autopilot.
 
     // Mission
     mavros_msgs::WaypointList mavros_cur_mission_;
@@ -170,7 +153,7 @@ private:
     ros::Publisher pose_geo_pub_;
     ros::Publisher velocity_pub_;
     ros::Publisher state_pub_;
-    ros::Publisher mission_state_pub_;
+    ros::Publisher active_waypoint_pub_;
     tf2_ros::Buffer tf_buffer_;
     tf2_ros::TransformListener tf_listener_;
     ros::Subscriber mavros_cur_mission_sub_;
@@ -187,28 +170,15 @@ private:
     std::map<std::string, double> mavros_params_;
     Eigen::Vector3d local_start_pos_;
 
-    std::thread mission_thread_;
-    double mission_thread_frequency_;
+    std::thread state_thread_;
+    double state_thread_frequency_;
 
     bool calling_takeoff_ = false;
     bool calling_land_ = false;
 
     std::atomic<uint8_t> state_ = {fixed_wing_lib::State::UNINITIALIZED};
 
-    int mission_state_ = 0;     // seq nr of the currently active waypoint of the mission: waypoints[current_seq].is_current == True.
-
-    // Abort flag
-    // If you want your task to be abortable, check its value periodically
-    std::atomic<bool> abort_ = {false};
-
-    // Freeze flag
-    // When aborting a task, freezes the platform if it is true
-    std::atomic<bool> freeze_ = {false};
-
-    // Simplest state-machine model: idle/running
-    // Implemented via mutex-locking
-    std::mutex running_mutex_;
-    std::atomic<bool> running_task_ = {false};
+    int active_waypoint_ = 0;     // seq nr of the currently active waypoint of the mission: waypoints[current_seq].is_current == True.
 
     // Ros spinning thread
     std::thread spin_thread_;

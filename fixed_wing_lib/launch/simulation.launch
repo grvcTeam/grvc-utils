@@ -55,14 +55,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
         <param name="home_pose_parent_frame" value="map"/>
         <rosparam param="home_pose">[0, 0, 0]</rosparam>
         <rosparam param="map_origin_geo">[37.558542, -5.931074, 7.89]</rosparam>
-        <rosparam param="mission/aux_distance"> 100.0</rosparam>
-        <rosparam param="mission/aux_height"> 10.0</rosparam>
-        <rosparam param="mission/loit_heading"> 0.0</rosparam>
-        <rosparam param="mission/loit_radius"> 50.0</rosparam>
-        <rosparam param="mission/loit_forward_moving"> 1.0</rosparam>
-        <rosparam param="mission/land_precision_mode"> 0.0</rosparam>
     </node>
-
-    <!-- <node pkg="tf" type="static_transform_publisher" name="link1_broadcaster" args="0 -150 0 0 0 0 map aux 100" /> -->
 
 </launch>
