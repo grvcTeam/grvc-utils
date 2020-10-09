@@ -46,9 +46,6 @@
 #include <std_msgs/Int8.h>
 #include <fixed_wing_lib/State.h>
 #include <fixed_wing_lib/SetHome.h>
-// #include <fixed_wing_lib/MissionElement.h>
-// #include <fixed_wing_lib/ParamFloat.h>
-// #include <fixed_wing_lib/SetMission.h>
 
 namespace grvc { namespace fw_ns {
 
@@ -82,19 +79,14 @@ public:
     // Set home position
     bool setHome(bool _set_z);
 
-    // Execute specified mission
-    // \param waypoint set indicates the waypoint groups with its parameters
-    // bool setMission(const std::vector<fixed_wing_lib::MissionElement>& _waypoint_element_list);
-
     bool pushMission();
     void clearMission();
+    void printMission();
     void addTakeOffWp(const geometry_msgs::PoseStamped& _takeoff_pose, float _minimum_pitch, float _aux_distance=-1, float _aux_height=-1, float _yaw_angle=-1);
     void addPassWpList(const std::vector<geometry_msgs::PoseStamped>& _pass_poses, float _acceptance_radius, float _orbit_distance, float _speed=-1);
     void addLoiterWpList(const std::vector<geometry_msgs::PoseStamped>& _loiter_poses, float _radius, float _forward_moving=-1, float _turns=-1, float _time=-1, float _heading=-1, float _speed=-1);
     void addLandWpList(const geometry_msgs::PoseStamped& _land_pose, float _loit_heading, float _loit_radius, float _loit_forward_moving, float _abort_alt, float _precision_mode, float _aux_distance=-1, float _aux_height=-1, float _aux_angle=-1);
     void addSpeedWpList(float _speed);
-    // check mission? If valid or not. Will depend of if it's flying already or not. Public or just run it before sending it?
-    // Display current mission in a string.
 
 private:
     // Library is initialized and ready to send missions?
@@ -123,7 +115,7 @@ private:
     geometry_msgs::TwistStamped cur_vel_;
     mavros_msgs::State          mavros_state_;
     mavros_msgs::ExtendedState  mavros_extended_state_;
-    mavros_msgs::WaypointList   mission_waypointlist_;      // The mission that will be sent to the autopilot.
+    mavros_msgs::WaypointList   mission_waypointlist_;      // The mission that will be pushed to the autopilot.
 
     // Mission
     mavros_msgs::WaypointList mavros_cur_mission_;

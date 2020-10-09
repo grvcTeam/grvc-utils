@@ -368,66 +368,6 @@ bool FixedWing::isReady() const {
 }
 
 
-// bool FixedWing::setMission(const std::vector<fixed_wing_lib::MissionElement>& _waypoint_set_list) {
-//     if ((this->state().state != fixed_wing_lib::State::LANDED_DISARMED) & (this->state().state != fixed_wing_lib::State::LANDED_ARMED) & (this->state().state != fixed_wing_lib::State::FLYING_AUTO)) {
-//         ROS_ERROR("Unable to setMission: not LANDED_DISARMED, LANDED_ARMED or FLYING_AUTO!");
-//         return false;
-//     }
-
-//     takeoff_wps_on_mission_ = std::vector<int>();
-//     land_wps_on_mission_ = std::vector<int>();
-//     bool mission_def_error = false;
-//     ROS_INFO("Checking mission definition...");
-
-//     for (std::vector<int>::size_type i = 0; i != _waypoint_set_list.size(); i++) {
-//         fixed_wing_lib::MissionElement mission_element = _waypoint_set_list[i];
-
-//         // switch 
-//         switch (mission_element.type) {
-//             case fixed_wing_lib::MissionElement::TAKEOFF_POSE:
-//             case fixed_wing_lib::MissionElement::TAKEOFF_AUX:
-//                 addTakeOffWp(mission_element,i);
-//                 break;
-//             case fixed_wing_lib::MissionElement::PASS:
-//                 addPassWpList(mission_element,i);
-//                 break;
-//             case fixed_wing_lib::MissionElement::LOITER_UNLIMITED:
-//             case fixed_wing_lib::MissionElement::LOITER_TURNS:
-//             case fixed_wing_lib::MissionElement::LOITER_TIME:
-//             case fixed_wing_lib::MissionElement::LOITER_HEIGHT:
-//                 addLoiterWpList(mission_element,i);
-//                 break;
-//             case fixed_wing_lib::MissionElement::LAND_POSE:
-//             case fixed_wing_lib::MissionElement::LAND_AUX:
-//                 addLandWpList(mission_element,i);
-//                 break;
-//             default:
-//                 ROS_ERROR("Error in [%d]-th waypoint set, field type is not correct.", static_cast<int>(i));
-//                 mission_def_error = true;
-//         }
-//     }
-
-//     if (mission_def_error) {
-//         ROS_ERROR("Mission aborted!");
-//     } else {
-//         ROS_INFO("Mission definition is correct.");
-//         clearMission();
-//         bool push_success = pushMission();
-//         std::this_thread::sleep_for(std::chrono::milliseconds(500));
-//         if (push_success) {
-//             arm(true);
-//             ROS_INFO("Starting mission!");
-//             setFlightMode("AUTO.MISSION");
-//         } else {
-//             ROS_WARN("Mavros rejected the mission.");
-//         }
-
-//     }
-
-//     return true;
-// }
-
-
 geometry_msgs::PoseStamped FixedWing::pose() {
     geometry_msgs::PoseStamped out;
 
@@ -900,6 +840,35 @@ void FixedWing::addSpeedWpList(float _speed) {
     wp.param4 = 0.0;            // Relative (0: absolute, 1: relative)
 
     mission_waypointlist_.waypoints.push_back(wp);
+}
+
+
+void FixedWing::printMission() {
+    std::cout << std::endl;
+    std::cout << "Printin the mission_waypointlist_ currently defined:" << std::endl;
+    std::cout << "current_seq = " << mission_waypointlist_.current_seq << std::endl;
+    std::cout << "waypoints.size() = " << mission_waypointlist_.waypoints.size() << std::endl;
+    int i=0;
+    for (mavros_msgs::Waypoint waypoint : mission_waypointlist_.waypoints) {
+        i++;
+        std::cout << std::endl;
+        std::cout << "waypoints [ " << i << " ].x_lat = " << waypoint.x_lat << std::endl;
+        std::cout << "waypoints [ " << i << " ].y_long = " << waypoint.y_long << std::endl;
+        std::cout << "waypoints [ " << i << " ].z_alt = " << waypoint.z_alt << std::endl;
+        std::cout << "waypoints [ " << i << " ].param1 = " << waypoint.param1 << std::endl;
+        std::cout << "waypoints [ " << i << " ].param2 = " << waypoint.param2 << std::endl;
+        std::cout << "waypoints [ " << i << " ].param3 = " << waypoint.param3 << std::endl;
+        std::cout << "waypoints [ " << i << " ].param4 = " << waypoint.param4 << std::endl;
+        if (waypoint.frame==0) { std::cout << "waypoints [ " << i << " ].frame = FRAME_GLOBAL" << std::endl; }
+        else if (waypoint.frame==1) { std::cout << "waypoints [ " << i << " ].frame = FRAME_LOCAL_NED" << std::endl; }
+        else if (waypoint.frame==2) { std::cout << "waypoints [ " << i << " ].frame = FRAME_MISSION" << std::endl; }
+        else if (waypoint.frame==3) { std::cout << "waypoints [ " << i << " ].frame = FRAME_GLOBAL_REL_ALT" << std::endl; }
+        else if (waypoint.frame==4) { std::cout << "waypoints [ " << i << " ].frame = FRAME_LOCAL_ENU" << std::endl; }
+        std::cout << "waypoints [ " << i << " ].command = " << waypoint.command << std::endl;
+        std::cout << "waypoints [ " << i << " ].is_current = " << waypoint.is_current << std::endl;
+        std::cout << "waypoints [ " << i << " ].autocontinue = " << waypoint.autocontinue << std::endl;
+    }
+    std::cout << std::endl;
 }
 
 
