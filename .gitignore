@@ -27,3 +27,7 @@
 *.exe
 *.out
 *.app
+
+# Don't track the uncompressed meshes:
+Karting_simplified_3d_mesh.dae
+Karting_texture.jpg
