@@ -27,6 +27,8 @@
 #include <mutex>
 #include <vector>
 #include <Eigen/Core>
+#include <tf2_ros/transform_listener.h>
+#include <tf2_ros/static_transform_broadcaster.h>
 
 #include <mavros_msgs/CommandBool.h>
 #include <mavros_msgs/SetMode.h>
@@ -41,8 +43,6 @@
 #include <geometry_msgs/PoseStamped.h>
 #include <geometry_msgs/TwistStamped.h>
 #include <geometry_msgs/TransformStamped.h>
-#include <tf2_ros/transform_listener.h>
-#include <tf2_ros/static_transform_broadcaster.h>
 #include <std_msgs/Int8.h>
 #include <fixed_wing_lib/State.h>
 #include <fixed_wing_lib/SetHome.h>
@@ -58,9 +58,9 @@ public:
 
     // Latest pose estimation of the robot
     geometry_msgs::PoseStamped pose();
-    sensor_msgs::NavSatFix geoPose() const { return cur_geo_pose_; }
+    sensor_msgs::NavSatFix geoPose() const { return this->cur_geo_pose_; }
     // Latest velocity estimation of the robot
-    geometry_msgs::TwistStamped velocity() const { return cur_vel_; }
+    geometry_msgs::TwistStamped velocity() const { return this->cur_vel_; }
 
     // Current uav state
     fixed_wing_lib::State state() const {
@@ -162,20 +162,17 @@ private:
     std::map<std::string, double> mavros_params_;
     Eigen::Vector3d local_start_pos_;
 
-    std::thread state_thread_;
-    double state_thread_frequency_;
-
     bool calling_takeoff_ = false;
     bool calling_land_ = false;
 
     std::atomic<uint8_t> state_ = {fixed_wing_lib::State::UNINITIALIZED};
 
-    int active_waypoint_ = 0;     // seq nr of the currently active waypoint of the mission: waypoints[current_seq].is_current == True.
+    int active_waypoint_ = 0;       // seq nr of the currently active waypoint of the mission: waypoints[current_seq].is_current == True.
 
-    // Ros spinning thread
-    std::thread spin_thread_;
-
-    std::thread server_thread_;
+    std::thread spin_thread_;       // Ros spinning threads (for running callbacks)
+    std::thread server_thread_;     // For publishing
+    std::thread state_thread_;      // Monitoring the UAV's state
+    double state_thread_frequency_;
 };
 
 }}	// namespace grvc::fw_ns

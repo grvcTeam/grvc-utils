@@ -196,10 +196,6 @@ FixedWing::FixedWing()
             std::string active_waypoint_topic = fw_ns + "/active_waypoint";
 
             ros::NodeHandle nh;
-            // set_mission_service_ = nh.advertiseService<fixed_wing_lib::SetMission::Request, fixed_wing_lib::SetMission::Response>( set_mission_srv,
-            //     [this](fixed_wing_lib::SetMission::Request &req, fixed_wing_lib::SetMission::Response &res) {
-            //     return this->setMission(req.mission_elements);
-            // });
             set_home_service_ = nh.advertiseService<fixed_wing_lib::SetHome::Request, fixed_wing_lib::SetHome::Response>( set_home_srv,
                 [this](fixed_wing_lib::SetHome::Request &req, fixed_wing_lib::SetHome::Response &res) {
                 return this->setHome(req.set_z);
@@ -217,7 +213,7 @@ FixedWing::FixedWing()
             ROS_INFO("FixedWing server [%d] running!", robot_id_);
             while (ros::ok()) {
                 pose_pub_.publish(this->pose());
-                pose_geo_pub_.publish(this->cur_geo_pose_);
+                pose_geo_pub_.publish(this->geoPose());
                 velocity_pub_.publish(this->velocity());
                 state_pub_.publish(this->state());
                 active_waypoint_pub_.publish(this->activeWaypoint());
@@ -743,8 +739,8 @@ void FixedWing::addLoiterWpList(const std::vector<geometry_msgs::PoseStamped>& _
             // LOITER_TIME
 
             wp.command = 19;                // MAV_CMD_NAV_LOITER_TIME
-            wp.param1 = _time;              // 	Loiter time.
-            wp.param3 = _radius;            // 	Radius around waypoint. If positive loiter clockwise, else counter-clockwise.
+            wp.param1 = _time;              // Loiter time.
+            wp.param3 = _radius;            // Radius around waypoint. If positive loiter clockwise, else counter-clockwise.
             wp.param4 = _forward_moving;    // this sets exit xtrack location: 0 for center of loiter wp, 1 for exit location.
                                             // Else, this is desired yaw angle. NaN for unchanged.
 
@@ -845,7 +841,7 @@ void FixedWing::addSpeedWpList(float _speed) {
 
 void FixedWing::printMission() {
     std::cout << std::endl;
-    std::cout << "Printin the mission_waypointlist_ currently defined:" << std::endl;
+    std::cout << "Printing the mission_waypointlist_ currently defined:" << std::endl;
     std::cout << "current_seq = " << mission_waypointlist_.current_seq << std::endl;
     std::cout << "waypoints.size() = " << mission_waypointlist_.waypoints.size() << std::endl;
     int i=0;

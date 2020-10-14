@@ -20,11 +20,29 @@
 //----------------------------------------------------------------------------------------------------------------------
 #include <fixed_wing_lib/fixed_wing.h>
 
+class InheritanceTestClass : public grvc::fw_ns::FixedWing {
+  public:
+   InheritanceTestClass() {
+       std::cout << " InheritanceTestClass running " << std::endl;
+   }
+   void printTest() {
+       std::cout << test_ << std::endl;
+   }
+
+  protected:
+   std::string test_ = "test";
+};
+
 int main(int _argc, char** _argv) {
 
     ros::init(_argc, _argv, "fixed_wing_node");
 
+    // InheritanceTestClass inheritance_test_class;    // Working just the same.
+    // inheritance_test_class.printMission();
+    // inheritance_test_class.printTest();
+
     grvc::fw_ns::FixedWing fw;
+    fw.printMission();
 
     while (ros::ok()) { sleep(1); }
 
