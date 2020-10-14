@@ -252,9 +252,9 @@ void FixedWing::stateThreadLoop() {
     while (ros::ok()) {
 
         if(this->mavros_state_.mode == "AUTO.MISSION") { 
-            if (std::find(takeoff_wps_on_mission_.begin(), takeoff_wps_on_mission_.end(), active_waypoint_) != takeoff_wps_on_mission_.end()) {
+            if (std::find(running_takeoff_wps_on_mission_.begin(), running_takeoff_wps_on_mission_.end(), active_waypoint_) != running_takeoff_wps_on_mission_.end()) {
                 calling_takeoff_ = true;
-            } else if (std::find(land_wps_on_mission_.begin(), land_wps_on_mission_.end(), active_waypoint_) != land_wps_on_mission_.end()) {
+            } else if (std::find(running_land_wps_on_mission_.begin(), running_land_wps_on_mission_.end(), active_waypoint_) != running_land_wps_on_mission_.end()) {
                 calling_land_ = true;
             } else {
                 calling_takeoff_ = false;
@@ -609,15 +609,24 @@ bool FixedWing::pushMission() {
     //     set_param_service.response.mode_sent ? "true" : "false");
 #endif
 
+    running_takeoff_wps_on_mission_ = takeoff_wps_on_mission_;
+    running_land_wps_on_mission_ = land_wps_on_mission_;
+
     return push_waypoint_service.response.success;
 }
 
 
-void FixedWing::clearMission() {
+bool FixedWing::pushClearMission() {
+    // Check required state
+    if ((this->state().state != fixed_wing_lib::State::LANDED_DISARMED) && (this->state().state != fixed_wing_lib::State::LANDED_ARMED)) {
+        ROS_ERROR("Unable to pushClearMission: not LANDED_*!");
+    }
+
     mavros_msgs::WaypointClear clear_mission_service;
 
     if (!clear_mission_client_.call(clear_mission_service)) {
         ROS_ERROR("Error in clear mission service calling!");
+        return false;
     }
     std::this_thread::sleep_for(std::chrono::milliseconds(300));
 #ifdef MAVROS_VERSION_BELOW_0_20_0
@@ -627,6 +636,18 @@ void FixedWing::clearMission() {
     //     set_param_service.response.mode_sent ? "true" : "false");
 #endif
     ROS_INFO("Trying to clear mission");
+
+    running_takeoff_wps_on_mission_.clear();
+    running_land_wps_on_mission_.clear();
+
+    return true;
+}
+
+
+void FixedWing::clearMission() {
+    mission_waypointlist_.waypoints.clear();
+    takeoff_wps_on_mission_.clear();
+    land_wps_on_mission_.clear();
 }
 
 
@@ -661,7 +682,7 @@ void FixedWing::addTakeOffWp(const geometry_msgs::PoseStamped& _takeoff_pose, fl
 
     wp.frame = 3;           // FRAME_GLOBAL_REL_ALT
     wp.command = 22;        // MAV_CMD_NAV_TAKEOFF
-    wp.is_current = true;
+    wp.is_current = mission_waypointlist_.waypoints.size()==0? true : false;
     wp.autocontinue = true;
     wp.param1 = _minimum_pitch; // (if airspeed sensor present), desired pitch without sensor
     wp.param4 = yaw_angle;      // (if magnetometer present), ignored without magnetometer. NaN for unchanged.

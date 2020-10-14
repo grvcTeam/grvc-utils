@@ -79,14 +79,15 @@ public:
     // Set home position
     bool setHome(bool _set_z);
 
-    bool pushMission();
-    void clearMission();
-    void printMission();
     void addTakeOffWp(const geometry_msgs::PoseStamped& _takeoff_pose, float _minimum_pitch, float _aux_distance=-1, float _aux_height=-1, float _yaw_angle=-1);
     void addPassWpList(const std::vector<geometry_msgs::PoseStamped>& _pass_poses, float _acceptance_radius, float _orbit_distance, float _speed=-1);
     void addLoiterWpList(const std::vector<geometry_msgs::PoseStamped>& _loiter_poses, float _radius, float _forward_moving=-1, float _turns=-1, float _time=-1, float _heading=-1, float _speed=-1);
     void addLandWpList(const geometry_msgs::PoseStamped& _land_pose, float _loit_heading, float _loit_radius, float _loit_forward_moving, float _abort_alt, float _precision_mode, float _aux_distance=-1, float _aux_height=-1, float _aux_angle=-1);
     void addSpeedWpList(float _speed);
+    void printMission();
+    void clearMission();
+    bool pushMission();
+    bool pushClearMission();
 
 private:
     // Library is initialized and ready to send missions?
@@ -122,6 +123,8 @@ private:
     geographic_msgs::GeoPoint origin_geo_;
     std::vector<int> takeoff_wps_on_mission_;
     std::vector<int> land_wps_on_mission_;
+    std::vector<int> running_takeoff_wps_on_mission_;
+    std::vector<int> running_land_wps_on_mission_;
 
     // Control
     bool mavros_has_pose_ = false;
