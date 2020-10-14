@@ -8,7 +8,6 @@
 
     roscd grvc_gazebo_worlds/models/karting_3D/meshes/
     tar -xJf Karting_3D.tar.xz
-    rm Karting_3D.tar.xz
      -->
 
 
