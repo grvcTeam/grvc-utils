@@ -41,8 +41,68 @@ int main(int _argc, char** _argv) {
     // inheritance_test_class.printMission();
     // inheritance_test_class.printTest();
 
+    // Takeoff WP parameters:
+    geometry_msgs::PoseStamped takeoff_pose;
+    takeoff_pose.pose.position.x = 100;
+    takeoff_pose.pose.position.y = 0;
+    takeoff_pose.pose.position.z = 20;
+    float minimum_pitch = 0;
+
+    // Pass WP parameters:
+    std::vector<geometry_msgs::PoseStamped> pass_poses;
+    geometry_msgs::PoseStamped pass_pose;
+    pass_pose.pose.position.x = 250;
+    pass_pose.pose.position.y = 0;
+    pass_pose.pose.position.z = 30;
+    pass_poses.push_back(pass_pose);
+    pass_pose.pose.position.x = 0;
+    pass_pose.pose.position.y = 250;
+    pass_pose.pose.position.z = 30;
+    pass_poses.push_back(pass_pose);
+    pass_pose.pose.position.x = -250;
+    pass_pose.pose.position.y = 0;
+    pass_pose.pose.position.z = 30;
+    pass_poses.push_back(pass_pose);
+    pass_pose.pose.position.x = 0;
+    pass_pose.pose.position.y = -250;
+    pass_pose.pose.position.z = 30;
+    pass_poses.push_back(pass_pose);
+    pass_pose.pose.position.x = 250;
+    pass_pose.pose.position.y = 0;
+    pass_pose.pose.position.z = 30;
+    pass_poses.push_back(pass_pose);
+    pass_pose.pose.position.x = 100;
+    pass_pose.pose.position.y = 0;
+    pass_pose.pose.position.z = 30;
+    pass_poses.push_back(pass_pose);
+    float acceptance_radius = 10;
+    float orbit_distance = 0;
+
+    // Land WP parameters:
+    std::vector<geometry_msgs::PoseStamped> land_poses;
+    geometry_msgs::PoseStamped land_pose;
+    land_pose.pose.position.x = 100;
+    land_pose.pose.position.y = 0;
+    land_pose.pose.position.z = 20;
+    land_poses.push_back(land_pose);
+    land_pose.pose.position.x = 0;
+    land_pose.pose.position.y = 0;
+    land_pose.pose.position.z = 10;
+    land_poses.push_back(land_pose);
+    float loit_heading = 0;
+    float loit_radius = 0;
+    float loit_forward_moving = 1;
+    float abort_alt = 0;
+    float precision_mode = 0;
+
     grvc::fw_ns::FixedWing fw;
+    std::cin.get();
+    fw.addTakeOffWp(takeoff_pose, minimum_pitch);
+    fw.addPassWpList(pass_poses, acceptance_radius, orbit_distance);
+    fw.addLandWpList(land_poses, loit_heading, loit_radius, loit_forward_moving, abort_alt, precision_mode);
     fw.printMission();
+    fw.pushMission();
+    fw.startMission();
 
     while (ros::ok()) { sleep(1); }
 

@@ -82,12 +82,13 @@ public:
     void addTakeOffWp(const geometry_msgs::PoseStamped& _takeoff_pose, float _minimum_pitch, float _aux_distance=-1, float _aux_height=-1, float _yaw_angle=-1);
     void addPassWpList(const std::vector<geometry_msgs::PoseStamped>& _pass_poses, float _acceptance_radius, float _orbit_distance, float _speed=-1);
     void addLoiterWpList(const std::vector<geometry_msgs::PoseStamped>& _loiter_poses, float _radius, float _forward_moving=-1, float _turns=-1, float _time=-1, float _heading=-1, float _speed=-1);
-    void addLandWpList(const geometry_msgs::PoseStamped& _land_pose, float _loit_heading, float _loit_radius, float _loit_forward_moving, float _abort_alt, float _precision_mode, float _aux_distance=-1, float _aux_height=-1, float _aux_angle=-1);
+    void addLandWpList(const std::vector<geometry_msgs::PoseStamped>& _land_poses, float _loit_heading, float _loit_radius, float _loit_forward_moving, float _abort_alt, float _precision_mode, float _aux_distance=-1, float _aux_height=-1, float _aux_angle=-1);
     void addSpeedWpList(float _speed);
     void printMission();
     void clearMission();
     bool pushMission();
     bool pushClearMission();
+    void startMission();
 
 private:
     // Library is initialized and ready to send missions?
@@ -170,7 +171,7 @@ private:
 
     std::atomic<uint8_t> state_ = {fixed_wing_lib::State::UNINITIALIZED};
 
-    int active_waypoint_ = 0;       // seq nr of the currently active waypoint of the mission: waypoints[current_seq].is_current == True.
+    int active_waypoint_ = -1;      // seq nr of the currently active waypoint of the mission: waypoints[current_seq].is_current == True.
 
     std::thread spin_thread_;       // Ros spinning threads (for running callbacks)
     std::thread server_thread_;     // For publishing

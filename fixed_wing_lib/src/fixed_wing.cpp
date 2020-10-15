@@ -555,7 +555,7 @@ void FixedWing::getAutopilotInformation() {
             autopilot_type_ = AutopilotType::PX4;
             break;
         default:
-            ROS_ERROR("FixedWing [%d]: Wrong autopilot type: %s", robot_id_, mavros::utils::to_string((mavlink::common::MAV_AUTOPILOT) vehicle_info_srv.response.vehicles[0].autopilot).c_str());
+            ROS_ERROR("FixedWing [%d]: Wrong autopilot type: %s", robot_id_, mavros::utils::to_string((mavlink::minimal::MAV_AUTOPILOT) vehicle_info_srv.response.vehicles[0].autopilot).c_str());
             exit(0);
     }
 
@@ -586,8 +586,8 @@ void FixedWing::getAutopilotInformation() {
 
     // Autopilot string
     ROS_INFO("FixedWing [%d]: Connected to %s version %s. Type: %s.", robot_id_,
-    mavros::utils::to_string((mavlink::common::MAV_AUTOPILOT) vehicle_info_srv.response.vehicles[0].autopilot).c_str(),
-    autopilot_version.c_str(), mavros::utils::to_string((mavlink::common::MAV_TYPE) vehicle_info_srv.response.vehicles[0].type).c_str());
+    mavros::utils::to_string((mavlink::minimal::MAV_AUTOPILOT) vehicle_info_srv.response.vehicles[0].autopilot).c_str(),
+    autopilot_version.c_str(), mavros::utils::to_string((mavlink::minimal::MAV_TYPE) vehicle_info_srv.response.vehicles[0].type).c_str());
 }
 
 
@@ -611,6 +611,8 @@ bool FixedWing::pushMission() {
 
     running_takeoff_wps_on_mission_ = takeoff_wps_on_mission_;
     running_land_wps_on_mission_ = land_wps_on_mission_;
+
+    ROS_INFO("Push mission ended.");
 
     return push_waypoint_service.response.success;
 }
@@ -644,6 +646,13 @@ bool FixedWing::pushClearMission() {
 }
 
 
+void FixedWing::startMission() {
+    setFlightMode("AUTO.MISSION");
+    arm(false); 
+    arm(true);
+}
+
+
 void FixedWing::clearMission() {
     mission_waypointlist_.waypoints.clear();
     takeoff_wps_on_mission_.clear();
@@ -664,7 +673,7 @@ void FixedWing::addTakeOffWp(const geometry_msgs::PoseStamped& _takeoff_pose, fl
     usf = uniformizeSpatialField(takeoff_pose_vector);
 
     if (_aux_distance==-1 && _aux_height==-1 && _yaw_angle==-1 ) {
-        if (usf.size() != 1) { ROS_ERROR("Error in [%d]-th waypoint set, posestamped list lenght is not 1!", mission_waypointlist_.waypoints.size()); } //TODO(JoseAndres): Update errors
+        if (usf.size() != 1) { ROS_ERROR("Error in [%d]-th waypoint set, posestamped list lenght is not 1!", (int) mission_waypointlist_.waypoints.size()); } //TODO(JoseAndres): Update errors
 
         yaw_angle = getMissionYaw(usf[0].pose.orientation);
 
@@ -697,7 +706,7 @@ void FixedWing::addPassWpList(const std::vector<geometry_msgs::PoseStamped>& _pa
     std::vector<geographic_msgs::GeoPoseStamped> usf;
     usf = uniformizeSpatialField(_pass_poses);
 
-    if (usf.size() == 0) { ROS_ERROR("Error in [%d]-th waypoint set, posestamped list is empty!", mission_waypointlist_.waypoints.size()); }
+    if (usf.size() == 0) { ROS_ERROR("Error in [%d]-th waypoint set, posestamped list is empty!", (int) mission_waypointlist_.waypoints.size()); }
 
     if (_speed!=-1) {
         addSpeedWpList(_speed);
@@ -726,7 +735,7 @@ void FixedWing::addLoiterWpList(const std::vector<geometry_msgs::PoseStamped>& _
     std::vector<geographic_msgs::GeoPoseStamped> usf;
     usf = uniformizeSpatialField(_loiter_poses);
 
-    if (usf.size() == 0) { ROS_ERROR("Error in [%d]-th waypoint set, posestamped list is empty!", mission_waypointlist_.waypoints.size()); }
+    if (usf.size() == 0) { ROS_ERROR("Error in [%d]-th waypoint set, posestamped list is empty!", (int) mission_waypointlist_.waypoints.size()); }
 
     if (_speed!=-1) {
         addSpeedWpList(_speed);
@@ -780,13 +789,10 @@ void FixedWing::addLoiterWpList(const std::vector<geometry_msgs::PoseStamped>& _
 }
 
 
-void FixedWing::addLandWpList(const geometry_msgs::PoseStamped& _land_pose, float _loit_heading, float _loit_radius, float _loit_forward_moving, float _abort_alt, float _precision_mode, float _aux_distance, float _aux_height, float _aux_angle) {
-
-    std::vector<geometry_msgs::PoseStamped> land_pose_vector;
-    land_pose_vector.push_back(_land_pose);
+void FixedWing::addLandWpList(const std::vector<geometry_msgs::PoseStamped>& _land_poses, float _loit_heading, float _loit_radius, float _loit_forward_moving, float _abort_alt, float _precision_mode, float _aux_distance, float _aux_height, float _aux_angle) {
 
     std::vector<geographic_msgs::GeoPoseStamped> usf;   // Stands for Uniformized Spatial Field
-    usf = uniformizeSpatialField(land_pose_vector);
+    usf = uniformizeSpatialField(_land_poses);
 
     mavros_msgs::Waypoint wp1;
     wp1.frame = 2;              // FRAME_MISSION
@@ -801,13 +807,13 @@ void FixedWing::addLandWpList(const geometry_msgs::PoseStamped& _land_pose, floa
 
     if (_aux_distance==-1 && _aux_height==-1 && _aux_angle==-1) {
 
-        if (usf.size() != 2) { ROS_ERROR("Error in [%d]-th waypoint, posestamped list length is not 2!", mission_waypointlist_.waypoints.size()); }
+        if (usf.size() != 2) { ROS_ERROR("Error in [%d]-th waypoint, posestamped list length is not 2!", (int) mission_waypointlist_.waypoints.size()); }
 
         wp2 = geoPoseStampedtoGlobalWaypoint(usf[0]);
 
     } else {
 
-        if (usf.size() != 1) { ROS_ERROR("Error in [%d]-th waypoint, posestamped list length is not 1!", mission_waypointlist_.waypoints.size()); }
+        if (usf.size() != 1) { ROS_ERROR("Error in [%d]-th waypoint, posestamped list length is not 1!", (int) mission_waypointlist_.waypoints.size()); }
 
         geometry_msgs::PoseStamped aux_pose = geoPoseStampedtoPoseStamped(usf[0]);
         aux_pose.pose.position.x += _aux_distance * cos(_aux_angle) + local_start_pos_[0];
@@ -882,8 +888,8 @@ void FixedWing::printMission() {
         else if (waypoint.frame==3) { std::cout << "waypoints [ " << i << " ].frame = FRAME_GLOBAL_REL_ALT" << std::endl; }
         else if (waypoint.frame==4) { std::cout << "waypoints [ " << i << " ].frame = FRAME_LOCAL_ENU" << std::endl; }
         std::cout << "waypoints [ " << i << " ].command = " << waypoint.command << std::endl;
-        std::cout << "waypoints [ " << i << " ].is_current = " << waypoint.is_current << std::endl;
-        std::cout << "waypoints [ " << i << " ].autocontinue = " << waypoint.autocontinue << std::endl;
+        std::cout << "waypoints [ " << i << " ].is_current = " << (bool) waypoint.is_current << std::endl;
+        std::cout << "waypoints [ " << i << " ].autocontinue = " << (bool) waypoint.autocontinue << std::endl;
     }
     std::cout << std::endl;
 }
