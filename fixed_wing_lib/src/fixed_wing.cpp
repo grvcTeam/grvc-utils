@@ -151,8 +151,7 @@ FixedWing::FixedWing()
 
     mavros_cur_mission_sub_ = nh.subscribe<mavros_msgs::WaypointList>(waypoints_mission_topic.c_str(), 1, \
         [this](const mavros_msgs::WaypointList::ConstPtr& _msg) {
-            this->mavros_cur_mission_ = *_msg;
-            active_waypoint_ = this->mavros_cur_mission_.current_seq;
+            this->active_waypoint_ = _msg->current_seq;
     });
 
     // Make communications spin!
@@ -178,7 +177,10 @@ FixedWing::FixedWing()
     get_param_client_ = nh.serviceClient<mavros_msgs::ParamGet>(get_param_srv.c_str());
     // Updating here is non-sense as service seems to be slow in waking up
 
-    // initMission();
+    // The following param need to be set in the px4cmd, setting them from here is not possible for MAVROS (in QGroundStation is possible):
+    // setParam("NAV_DLL_ACT",0);   // To switch mode
+    // setParam("MIS_DIST_1WP",0);
+    // setParam("MIS_DIST_WPS",0);  // Minimum distance between wps. default 900m
 
     // Start server if explicitly asked
     std::string server_mode;
@@ -281,18 +283,6 @@ fixed_wing_lib::State FixedWing::guessState() {
     if (this->calling_land_) { output.state = fixed_wing_lib::State::LANDING; return output; }
     if (this->mavros_state_.mode == "OFFBOARD" || this->mavros_state_.mode == "GUIDED" || this->mavros_state_.mode == "GUIDED_NOGPS" || this->mavros_state_.mode == "AUTO.MISSION") { output.state = fixed_wing_lib::State::FLYING_AUTO; return output; }
     output.state = fixed_wing_lib::State::FLYING_MANUAL; return output;
-}
-
-
-void FixedWing::initMission() {
-    setFlightMode("AUTO.LAND");
-    arm(false); 
-    arm(true);      //TODO(Jose Andres): Should not arm in this node, but otherwise, swithc to AUTO.MISSION won't be allowed
-
-    // The following param need to be set in the px4cmd, setting them from here is not possible for MAVROS (in QGroundStation is possible, rosservice call doesn't work too):
-    // setParam("NAV_DLL_ACT",0); // To switch mode
-    // setParam("MIS_DIST_1WP",0);
-    // setParam("MIS_DIST_WPS",0); // Minimum distance between wps. default 900m
 }
 
 
@@ -866,7 +856,7 @@ void FixedWing::addSpeedWpList(float _speed) {
 }
 
 
-void FixedWing::printMission() {
+void FixedWing::printMission() const {
     std::cout << std::endl;
     std::cout << "Printing the mission_waypointlist_ currently defined:" << std::endl;
     std::cout << "current_seq = " << mission_waypointlist_.current_seq << std::endl;

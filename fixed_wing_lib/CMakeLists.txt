@@ -75,9 +75,9 @@ target_link_libraries(${PROJECT_NAME}
 )
 
 ## Declare a C++ executable
-add_executable(${PROJECT_NAME}_node src/fixed_wing_node.cpp)
-add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-target_link_libraries(${PROJECT_NAME}_node
+add_executable(${PROJECT_NAME}_test_node src/fixed_wing_test.cpp)
+add_dependencies(${PROJECT_NAME}_test_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(${PROJECT_NAME}_test_node
   ${catkin_LIBRARIES}
   ${PROJECT_NAME}
 )

@@ -17,7 +17,11 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
     <arg name="fw_pub_rate" default="30.0"/>
 
     <arg name="mode" default="sitl"/>
-    <arg name="robot_model" default="plane"/>
+
+    <!-- Select (uncomment) a robot model for the simulation: -->
+    <!-- <arg name="robot_model" default="plane"/> -->
+    <arg name="robot_model" default="mbzirc"/>
+    <!-- <arg name="robot_model" default="standard_vtol"/> -->
 
     <arg name="pose_frame_id" default=""/> <!-- To publish fw/pose in other frame than local, e.g. map -->
 
@@ -47,7 +51,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
     </include>
 
     <!-- Launch Fixed Wing server for uav id=1 -->
-    <node pkg="fixed_wing_lib" type="fixed_wing_lib_node" name="fixed_wing_lib" ns="$(arg ns_prefix)1" output="screen">
+    <node pkg="fixed_wing_lib" type="fixed_wing_lib_test_node" name="fixed_wing_lib" ns="$(arg ns_prefix)1" output="screen">
         <param name="uav_id" value="1"/>
         <param name="fw_server" value="$(arg fw_server)"/>
         <param name="fw_pub_rate" value="$(arg fw_pub_rate)"/>

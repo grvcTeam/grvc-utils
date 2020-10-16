@@ -84,7 +84,7 @@ public:
     void addLoiterWpList(const std::vector<geometry_msgs::PoseStamped>& _loiter_poses, float _radius, float _forward_moving=-1, float _turns=-1, float _time=-1, float _heading=-1, float _speed=-1);
     void addLandWpList(const std::vector<geometry_msgs::PoseStamped>& _land_poses, float _loit_heading, float _loit_radius, float _loit_forward_moving, float _abort_alt, float _precision_mode, float _aux_distance=-1, float _aux_height=-1, float _aux_angle=-1);
     void addSpeedWpList(float _speed);
-    void printMission();
+    void printMission() const;
     void clearMission();
     bool pushMission();
     bool pushClearMission();
@@ -109,23 +109,20 @@ private:
     geometry_msgs::PoseStamped geoPoseStampedtoPoseStamped(const geographic_msgs::GeoPoseStamped _geoposestamped );
     mavros_msgs::Waypoint geoPoseStampedtoGlobalWaypoint(const geographic_msgs::GeoPoseStamped& _geoposestamped );
     float getMissionYaw(const geometry_msgs::Quaternion& _quat);
-    void initMission();
 
-    // WaypointList path_;
     geometry_msgs::PoseStamped  cur_pose_;
     sensor_msgs::NavSatFix      cur_geo_pose_;
     geometry_msgs::TwistStamped cur_vel_;
     mavros_msgs::State          mavros_state_;
     mavros_msgs::ExtendedState  mavros_extended_state_;
-    mavros_msgs::WaypointList   mission_waypointlist_;      // The mission that will be pushed to the autopilot.
 
     // Mission
-    mavros_msgs::WaypointList mavros_cur_mission_;
     geographic_msgs::GeoPoint origin_geo_;
     std::vector<int> takeoff_wps_on_mission_;
     std::vector<int> land_wps_on_mission_;
     std::vector<int> running_takeoff_wps_on_mission_;
     std::vector<int> running_land_wps_on_mission_;
+    mavros_msgs::WaypointList mission_waypointlist_;      // The mission that will be pushed to the autopilot.
 
     // Control
     bool mavros_has_pose_ = false;
