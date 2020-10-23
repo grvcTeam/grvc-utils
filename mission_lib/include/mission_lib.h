@@ -1,5 +1,5 @@
 //----------------------------------------------------------------------------------------------------------------------
-// Fixed wing lib
+// Mission lib
 //----------------------------------------------------------------------------------------------------------------------
 // The MIT License (MIT)
 // 
@@ -18,13 +18,12 @@
 // OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
 // OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //----------------------------------------------------------------------------------------------------------------------
-#ifndef FIXED_WING_LIB_H
-#define FIXED_WING_LIB_H
+
+#ifndef MISSION_LIB_H
+#define MISSION_LIB_H
 
 #include <ros/ros.h>
 #include <thread>
-#include <atomic>
-#include <mutex>
 #include <vector>
 #include <Eigen/Core>
 #include <tf2_ros/transform_listener.h>
@@ -33,8 +32,6 @@
 #include <mavros_msgs/CommandBool.h>
 #include <mavros_msgs/SetMode.h>
 #include <mavros_msgs/State.h>
-#include <mavros_msgs/ExtendedState.h>
-#include <mavros_msgs/GlobalPositionTarget.h>
 #include <mavros_msgs/WaypointList.h>
 #include <mavros_msgs/Waypoint.h>
 #include <geographic_msgs/GeoPoint.h>
@@ -43,18 +40,15 @@
 #include <geometry_msgs/PoseStamped.h>
 #include <geometry_msgs/TwistStamped.h>
 #include <geometry_msgs/TransformStamped.h>
-#include <std_msgs/Int8.h>
-#include <fixed_wing_lib/State.h>
-#include <fixed_wing_lib/SetHome.h>
 
-namespace grvc { namespace fw_ns {
+namespace grvc { namespace mission_ns {
 
-class FixedWing {
+class Mission {
 
 public:
 
-    FixedWing();
-    ~FixedWing();
+    Mission();
+    ~Mission();
 
     // Latest pose estimation of the robot
     geometry_msgs::PoseStamped pose();
@@ -62,66 +56,47 @@ public:
     // Latest velocity estimation of the robot
     geometry_msgs::TwistStamped velocity() const { return this->cur_vel_; }
 
-    // Current uav state
-    fixed_wing_lib::State state() const {
-        fixed_wing_lib::State output;
-        output.state = this->state_;
-        return output;
-    };
-
     // Current waypoint of the list that define de mission
-    std_msgs::Int8 activeWaypoint() const {
-        std_msgs::Int8 output;
-        output.data = this->active_waypoint_;
-        return output;
-    };
+    int activeWaypoint() const { return this->active_waypoint_; };
 
     // Set home position
     bool setHome(bool _set_z);
 
-    void addTakeOffWp(const geometry_msgs::PoseStamped& _takeoff_pose, float _minimum_pitch, float _aux_distance=-1, float _aux_height=-1, float _yaw_angle=-1);
+    void addTakeOffWp(const geometry_msgs::PoseStamped& _takeoff_pose, float _minimum_pitch, float _yaw_angle=-1);
     void addPassWpList(const std::vector<geometry_msgs::PoseStamped>& _pass_poses, float _acceptance_radius, float _orbit_distance, float _speed=-1);
     void addLoiterWpList(const std::vector<geometry_msgs::PoseStamped>& _loiter_poses, float _radius, float _forward_moving=-1, float _turns=-1, float _time=-1, float _heading=-1, float _speed=-1);
-    void addLandWpList(const std::vector<geometry_msgs::PoseStamped>& _land_poses, float _loit_heading, float _loit_radius, float _loit_forward_moving, float _abort_alt, float _precision_mode, float _aux_distance=-1, float _aux_height=-1, float _aux_angle=-1);
-    void addSpeedWpList(float _speed);
-    void printMission() const;
-    void clearMission();
-    bool pushMission();
-    bool pushClearMission();
-    void startMission();
+    void addLandWpList(const std::vector<geometry_msgs::PoseStamped>& _land_poses, float _loit_heading, float _loit_radius, float _loit_forward_moving, float _abort_alt, float _precision_mode);
+    void addSpeedWp(float _speed);
+    void print() const;
+    void clear();
+    bool push();
+    bool pushClear();
+    void start();
 
 private:
     // Library is initialized and ready to send missions?
     bool isReady() const;
 
-    void stateThreadLoop();
     void getAutopilotInformation();
     void initHomeFrame();
     void setFlightMode(const std::string& _flight_mode);
     double updateParam(const std::string& _param_id);
-    fixed_wing_lib::State guessState();
 
-    // FW specifics
     void arm(bool _arm);
     void setParam(const std::string& _param_id,int _param_value);
     std::vector<geographic_msgs::GeoPoseStamped> uniformizeSpatialField(const std::vector<geometry_msgs::PoseStamped>& _posestamped_list);
     geographic_msgs::GeoPoseStamped poseStampedtoGeoPoseStamped(const geometry_msgs::PoseStamped& _posestamped );
     geometry_msgs::PoseStamped geoPoseStampedtoPoseStamped(const geographic_msgs::GeoPoseStamped _geoposestamped );
     mavros_msgs::Waypoint geoPoseStampedtoGlobalWaypoint(const geographic_msgs::GeoPoseStamped& _geoposestamped );
-    float getMissionYaw(const geometry_msgs::Quaternion& _quat);
+    float getYaw(const geometry_msgs::Quaternion& _quat);
 
     geometry_msgs::PoseStamped  cur_pose_;
     sensor_msgs::NavSatFix      cur_geo_pose_;
     geometry_msgs::TwistStamped cur_vel_;
     mavros_msgs::State          mavros_state_;
-    mavros_msgs::ExtendedState  mavros_extended_state_;
 
     // Mission
     geographic_msgs::GeoPoint origin_geo_;
-    std::vector<int> takeoff_wps_on_mission_;
-    std::vector<int> land_wps_on_mission_;
-    std::vector<int> running_takeoff_wps_on_mission_;
-    std::vector<int> running_land_wps_on_mission_;
     mavros_msgs::WaypointList mission_waypointlist_;      // The mission that will be pushed to the autopilot.
 
     // Control
@@ -135,21 +110,13 @@ private:
     ros::ServiceClient set_param_client_;
     ros::ServiceClient push_mission_client_;
     ros::ServiceClient clear_mission_client_;
-    ros::ServiceServer set_mission_service_;
-    ros::ServiceServer set_home_service_;
     ros::Subscriber mavros_cur_pose_sub_;
     ros::Subscriber mavros_cur_geo_pose_sub_;
     ros::Subscriber mavros_cur_vel_sub_;
     ros::Subscriber mavros_cur_state_sub_;
-    ros::Subscriber mavros_cur_extended_state_sub_;
-    ros::Publisher pose_pub_;
-    ros::Publisher pose_geo_pub_;
-    ros::Publisher velocity_pub_;
-    ros::Publisher state_pub_;
-    ros::Publisher active_waypoint_pub_;
+    ros::Subscriber mavros_cur_mission_sub_;
     tf2_ros::Buffer tf_buffer_;
     tf2_ros::TransformListener tf_listener_;
-    ros::Subscriber mavros_cur_mission_sub_;
 
     int robot_id_;
     bool id_is_unique_;
@@ -163,19 +130,11 @@ private:
     std::map<std::string, double> mavros_params_;
     Eigen::Vector3d local_start_pos_;
 
-    bool calling_takeoff_ = false;
-    bool calling_land_ = false;
-
-    std::atomic<uint8_t> state_ = {fixed_wing_lib::State::UNINITIALIZED};
-
     int active_waypoint_ = -1;      // seq nr of the currently active waypoint of the mission: waypoints[current_seq].is_current == True.
 
-    std::thread spin_thread_;       // Ros spinning threads (for running callbacks)
-    std::thread server_thread_;     // For publishing
-    std::thread state_thread_;      // Monitoring the UAV's state
-    double state_thread_frequency_;
+    std::thread spin_thread_;       // Ros spinning threads for running callbacks
 };
 
-}}	// namespace grvc::fw_ns
+}}	// namespace grvc::mission_ns
 
-#endif // FIXED_WING_LIB_H
+#endif // MISSION_LIB_H

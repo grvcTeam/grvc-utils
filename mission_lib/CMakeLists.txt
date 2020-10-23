@@ -1,11 +1,11 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(fixed_wing_lib)
+project(mission_lib)
 
 add_compile_options(-std=c++11)
 
 ## Find catkin macros and libraries
 find_package(catkin REQUIRED COMPONENTS
-  message_generation
+  # message_generation
   std_msgs
   mavros
   mavros_msgs
@@ -18,16 +18,16 @@ find_package(catkin REQUIRED COMPONENTS
 ################################################
 
 # Generate messages in the 'msg' folder
-add_message_files(
-  FILES
-  State.msg
-)
+# add_message_files(
+#   FILES
+#   State.msg
+# )
 
 # Generate services in the 'srv' folder
-add_service_files(
-  FILES
-  SetHome.srv
-)
+# add_service_files(
+#   FILES
+#   SetHome.srv
+# )
 
 ## Generate actions in the 'action' folder
 # add_action_files(
@@ -37,10 +37,10 @@ add_service_files(
 # )
 
 ## Generate added messages and services with any dependencies listed here
-generate_messages(
-  DEPENDENCIES
-  std_msgs mavros_msgs
-)
+# generate_messages(
+#   DEPENDENCIES
+#   std_msgs mavros_msgs
+# )
 
 
 ###################################
@@ -66,7 +66,7 @@ include_directories(
 
 ## Declare a C++ library
 add_library(${PROJECT_NAME}
-  src/fixed_wing.cpp
+  src/mission_lib.cpp
 )
 ## Add cmake target dependencies of the library
 add_dependencies(${PROJECT_NAME} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
@@ -75,7 +75,7 @@ target_link_libraries(${PROJECT_NAME}
 )
 
 ## Declare a C++ executable
-add_executable(${PROJECT_NAME}_test_node src/fixed_wing_test.cpp)
+add_executable(${PROJECT_NAME}_test_node src/mission_lib_test.cpp)
 add_dependencies(${PROJECT_NAME}_test_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(${PROJECT_NAME}_test_node
   ${catkin_LIBRARIES}

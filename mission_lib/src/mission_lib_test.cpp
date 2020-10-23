@@ -1,9 +1,9 @@
 //----------------------------------------------------------------------------------------------------------------------
-// GRVC UAL
+// Mission lib
 //----------------------------------------------------------------------------------------------------------------------
 // The MIT License (MIT)
 // 
-// Copyright (c) 2016 GRVC University of Seville
+// Copyright (c) 2020 GRVC University of Seville
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 // documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -18,9 +18,10 @@
 // OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
 // OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //----------------------------------------------------------------------------------------------------------------------
-#include <fixed_wing_lib/fixed_wing.h>
 
-class InheritanceTestClass : public grvc::fw_ns::FixedWing {
+#include <mission_lib.h>
+
+class InheritanceTestClass : public grvc::mission_ns::Mission {
   public:
    InheritanceTestClass() {
        std::cout << " InheritanceTestClass running " << std::endl;
@@ -35,10 +36,10 @@ class InheritanceTestClass : public grvc::fw_ns::FixedWing {
 
 int main(int _argc, char** _argv) {
 
-    ros::init(_argc, _argv, "fixed_wing_node");
+    ros::init(_argc, _argv, "mission_node");
 
     // InheritanceTestClass inheritance_test_class;    // Working just the same.
-    // inheritance_test_class.printMission();
+    // inheritance_test_class.print();
     // inheritance_test_class.printTest();
 
     // Takeoff WP parameters:
@@ -95,14 +96,14 @@ int main(int _argc, char** _argv) {
     float abort_alt = 0;
     float precision_mode = 0;
 
-    grvc::fw_ns::FixedWing fw;
+    grvc::mission_ns::Mission mission;
     std::cin.get();
-    fw.addTakeOffWp(takeoff_pose, minimum_pitch);
-    fw.addPassWpList(pass_poses, acceptance_radius, orbit_distance);
-    fw.addLandWpList(land_poses, loit_heading, loit_radius, loit_forward_moving, abort_alt, precision_mode);
-    fw.printMission();
-    fw.pushMission();
-    fw.startMission();
+    mission.addTakeOffWp(takeoff_pose, minimum_pitch);
+    mission.addPassWpList(pass_poses, acceptance_radius, orbit_distance);
+    mission.addLandWpList(land_poses, loit_heading, loit_radius, loit_forward_moving, abort_alt, precision_mode);
+    mission.print();
+    mission.push();
+    mission.start();
 
     while (ros::ok()) { sleep(1); }
 
