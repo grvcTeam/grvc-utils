@@ -163,7 +163,13 @@ Mission::Mission()
 
     // Error if the autpilot is not PX4, as right now is the only one supported by this library.
     if (autopilot_type_!=AutopilotType::PX4) {
-        ROS_ERROR("Mission_lib only works, for PX4 Autopilot, aborting Mission constructor.");
+        ROS_ERROR("Mission_lib only works for PX4 Autopilot. Aborting Mission constructor.");
+        exit(EXIT_FAILURE);
+    }
+
+    // Error if the airframe is not a fixed wing, multicopter or VTOL, as right now they are the ones supported by this library.
+    if (airframe_type_==AirframeType::OTHER) {
+        ROS_ERROR("Mission_lib only works for fixed wing, multicopter or VTOL airframe. Aborting Mission constructor.");
         exit(EXIT_FAILURE);
     }
 
@@ -486,6 +492,50 @@ void Mission::getAutopilotInformation() {
         default:
             version_type = "";
     }
+
+    // Airframe type
+    switch (vehicle_info_srv.response.vehicles[0].type) {
+        case 1:     // Fixed wing aircraft
+            airframe_type_ = AirframeType::FIXED_WING;
+            break;
+        case 2:     // Quadrotor
+        case 3:     // Coaxial helicopter
+        case 4:     // Normal helicopter with tail rotor
+        case 13:    // Hexarotor
+        case 14:    // Octorotor
+        case 15:    // Tricopter
+            airframe_type_ = AirframeType::MULTICOPTER;
+            break;
+        case 19:    // Two-rotor VTOL using control surfaces in vertical operation in addition. Tailsitter.
+        case 20:    // Quad-rotor VTOL using a V-shaped quad config in vertical operation. Tailsitter.
+        case 21:    // Tiltrotor VTOL
+        case 22:    // VTOL reserved 2
+        case 23:    // VTOL reserved 3
+        case 24:    // VTOL reserved 4
+        case 25:    // VTOL reserved 5
+            airframe_type_ = AirframeType::VTOL;
+            break;
+        case 0:     // Generic micro air vehicle
+        case 5:     // Ground installation
+        case 6:     // Operator control unit / ground control station
+        case 7:     // Airship, controlled
+        case 8:     // Free balloon, uncontrolled
+        case 9:     // Rocket
+        case 10:    // Ground rover
+        case 11:    // Surface vessel, boat, ship
+        case 12:    // Submarine
+        case 16:    // Flapping wing
+        case 17:    // Kite
+        case 18:    // Onboard companion controller
+        case 26:    // Onboard gimbal
+        case 27:    // Onboard ADSB peripheral
+            airframe_type_ = AirframeType::OTHER;
+            break;
+        default:
+            ROS_ERROR("Mission [%d]: Wrong airframe type: %s", robot_id_, mavros::utils::to_string((mavlink::minimal::MAV_TYPE) vehicle_info_srv.response.vehicles[0].type).c_str());
+            exit(0);
+    }
+
     std::string autopilot_version = std::to_string(major_version) + "." + std::to_string(minor_version) + "." + std::to_string(patch_version) + version_type;
 
     // Autopilot string
@@ -779,7 +829,7 @@ std::vector<geographic_msgs::GeoPoseStamped> Mission::uniformizeSpatialField( co
             homogen_world_pos.pose.position.longitude = posestamped.pose.position.y;
             homogen_world_pos.pose.position.altitude = posestamped.pose.position.z;
         } else if ( waypoint_frame_id == "" || waypoint_frame_id == uav_home_frame_id_ ) {
-// TODO: THIS WAS AN if, BUT SHOULD BE AN else if LIKE THIS, RIGHT? CHECK.
+// TODO (Ángel): THIS WAS AN if, BUT SHOULD BE AN else if LIKE THIS, RIGHT? CHECK. Maybe this solves the other TODO "Check this and solve frames issue".
             // No transform is needed. Passed to global
             homogen_world_pos = poseStampedtoGeoPoseStamped(posestamped);
         } else {

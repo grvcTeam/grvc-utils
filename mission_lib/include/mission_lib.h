@@ -80,10 +80,11 @@ private:
     void getAutopilotInformation();
     void initHomeFrame();
     void setFlightMode(const std::string& _flight_mode);
+    void setParam(const std::string& _param_id,int _param_value);
     double updateParam(const std::string& _param_id);
+    std::map<std::string, double> mavros_params_;
 
     void arm(bool _arm);
-    void setParam(const std::string& _param_id,int _param_value);
     std::vector<geographic_msgs::GeoPoseStamped> uniformizeSpatialField(const std::vector<geometry_msgs::PoseStamped>& _posestamped_list);
     geographic_msgs::GeoPoseStamped poseStampedtoGeoPoseStamped(const geometry_msgs::PoseStamped& _posestamped );
     geometry_msgs::PoseStamped geoPoseStampedtoPoseStamped(const geographic_msgs::GeoPoseStamped _geoposestamped );
@@ -120,15 +121,19 @@ private:
 
     int robot_id_;
     bool id_is_unique_;
+
     enum struct AutopilotType {PX4, APM, UNKNOWN};
     AutopilotType autopilot_type_ = AutopilotType::UNKNOWN;
+
+    enum struct AirframeType {FIXED_WING, MULTICOPTER, VTOL, OTHER, UNKNOWN};
+    AirframeType airframe_type_ = AirframeType::UNKNOWN;
+
     std::string pose_frame_id_;
     std::string uav_home_frame_id_;
     std::string uav_frame_id_;
-    tf2_ros::StaticTransformBroadcaster * static_tf_broadcaster_;
-    std::map <std::string, geometry_msgs::TransformStamped> cached_transforms_;
-    std::map<std::string, double> mavros_params_;
     Eigen::Vector3d local_start_pos_;
+    tf2_ros::StaticTransformBroadcaster * static_tf_broadcaster_;
+    std::map<std::string, geometry_msgs::TransformStamped> cached_transforms_;
 
     int active_waypoint_ = -1;      // seq nr of the currently active waypoint of the mission: waypoints[current_seq].is_current == True.
 
