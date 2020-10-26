@@ -63,9 +63,10 @@ public:
     bool setHome(bool _set_z);
 
     void addTakeOffWp(const geometry_msgs::PoseStamped& _takeoff_pose, float _minimum_pitch=15);
-    void addPassWpList(const std::vector<geometry_msgs::PoseStamped>& _pass_poses, float _acceptance_radius, float _orbit_distance, float _speed=-1);
-    void addLoiterWpList(const std::vector<geometry_msgs::PoseStamped>& _loiter_poses, float _radius, float _forward_moving=-1, float _turns=-1, float _time=-1, float _heading=-1, float _speed=-1);
-    void addLandWpList(const std::vector<geometry_msgs::PoseStamped>& _land_poses, float _loit_heading, float _loit_radius, float _loit_forward_moving, float _abort_alt, float _precision_mode);
+    void addPassWpList(const std::vector<geometry_msgs::PoseStamped>& _pass_poses, float _speed=-1, float _acceptance_radius=10, float _pass_radius=0);
+    void addLoiterWpList(const std::vector<geometry_msgs::PoseStamped>& _loiter_poses, float _time=-1, float _radius=75, float _speed=-1, float _turns=-1, float _forward_moving=0, float _heading=-1);
+    void addLandWp(const geometry_msgs::PoseStamped& _land_pose, float _abort_alt=0, float _precision_mode=0);      // For VTOL and MULTICOPTER
+    void addLandWp(const geometry_msgs::PoseStamped& _loiter_to_alt_start_landing_pose, const geometry_msgs::PoseStamped& _land_pose, float _loit_radius=75, float _loit_heading=1, float _loit_forward_moving=1, float _abort_alt=0, float _precision_mode=0); // For FIXED_WING
     void addSpeedWp(float _speed);
     void print() const;
     void clear();

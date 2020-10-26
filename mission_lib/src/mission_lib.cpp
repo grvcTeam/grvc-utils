@@ -642,7 +642,7 @@ void Mission::addTakeOffWp(const geometry_msgs::PoseStamped& _takeoff_pose, floa
 }
 
 
-void Mission::addPassWpList(const std::vector<geometry_msgs::PoseStamped>& _pass_poses, float _acceptance_radius, float _orbit_distance, float _speed) {
+void Mission::addPassWpList(const std::vector<geometry_msgs::PoseStamped>& _pass_poses, float _speed, float _acceptance_radius, float _pass_radius) {
 
     std::vector<geographic_msgs::GeoPoseStamped> usf;
     usf = uniformizeSpatialField(_pass_poses);
@@ -661,7 +661,7 @@ void Mission::addPassWpList(const std::vector<geometry_msgs::PoseStamped>& _pass
         wp.is_current = false;
         wp.autocontinue = true;
         wp.param2 = _acceptance_radius;                     // (if the sphere with this radius is hit, the waypoint counts as reached)
-        wp.param3 = _orbit_distance;                        // 0 to pass through the WP, if > 0 radius to pass by WP. Positive value for clockwise orbit,
+        wp.param3 = _pass_radius;                           // 0 to pass through the WP, if > 0 radius to pass by WP. Positive value for clockwise orbit,
                                                             // negative value for counter-clockwise orbit. Allows trajectory control.
         wp.param4 = getYaw(geoposestamped.pose.orientation); // Desired yaw angle at waypoint (rotary wing). NaN for unchanged.
 
@@ -671,7 +671,7 @@ void Mission::addPassWpList(const std::vector<geometry_msgs::PoseStamped>& _pass
 }
 
 
-void Mission::addLoiterWpList(const std::vector<geometry_msgs::PoseStamped>& _loiter_poses, float _radius, float _forward_moving, float _turns, float _time, float _heading, float _speed) {
+void Mission::addLoiterWpList(const std::vector<geometry_msgs::PoseStamped>& _loiter_poses, float _time, float _radius, float _speed, float _turns, float _forward_moving, float _heading) {
 
     std::vector<geographic_msgs::GeoPoseStamped> usf;
     usf = uniformizeSpatialField(_loiter_poses);
@@ -690,39 +690,56 @@ void Mission::addLoiterWpList(const std::vector<geometry_msgs::PoseStamped>& _lo
         wp.is_current = false;
         wp.autocontinue = true;
 
-        if (_turns==-1 && _forward_moving==-1 && _time==-1) {
-            // LOITER_UNLIMITED
+        if (airframe_type_==AirframeType::MULTICOPTER) {
+            if (_time==-1) {
+                // LOITER_UNLIMITED
 
-            wp.command = 17;                                            // MAV_CMD_NAV_LOITER_UNLIM
-            wp.param3 = _radius;                                        // Radius around waypoint. If positive loiter clockwise, else counter-clockwise
-            wp.param4 = getYaw(geoposestamped.pose.orientation); // NaN for unchanged.
+                wp.command = 17;                                     // MAV_CMD_NAV_LOITER_UNLIM
+                wp.param4 = getYaw(geoposestamped.pose.orientation); // NaN for unchanged.
 
-        } else if (_turns!=-1 && _time==-1 && _heading==-1) {
-            // LOITER_TURNS
+            } else {
+                // LOITER_TIME
 
-            wp.command = 18;                // MAV_CMD_NAV_LOITER_TURNS
-            wp.param1 = _turns;             // Number of turns.
-            wp.param3 = _radius;            // Radius around waypoint. If positive loiter clockwise, else counter-clockwise
-            wp.param4 = _forward_moving;    // this sets exit xtrack location: 0 for center of loiter wp, 1 for exit location.
-                                            // Else, this is desired yaw angle. NaN for unchanged.
+                wp.command = 19;                // MAV_CMD_NAV_LOITER_TIME
+                wp.param1 = _time;              // Loiter time.
 
-        } else if (_turns==-1 && _time!=-1 && _heading==-1) {
-            // LOITER_TIME
+            }
+        } else {
+            if (_turns==-1 && _time==-1 && _heading==-1) {
+                // LOITER_UNLIMITED
 
-            wp.command = 19;                // MAV_CMD_NAV_LOITER_TIME
-            wp.param1 = _time;              // Loiter time.
-            wp.param3 = _radius;            // Radius around waypoint. If positive loiter clockwise, else counter-clockwise.
-            wp.param4 = _forward_moving;    // this sets exit xtrack location: 0 for center of loiter wp, 1 for exit location.
-                                            // Else, this is desired yaw angle. NaN for unchanged.
+                wp.command = 17;                                     // MAV_CMD_NAV_LOITER_UNLIM
+                wp.param3 = _radius;                                 // Radius around waypoint. If positive loiter clockwise, else counter-clockwise
+                wp.param4 = getYaw(geoposestamped.pose.orientation); // NaN for unchanged.
 
-        } else if (_turns==-1 && _time==-1 && _heading!=-1) {
-            // LOITER_HEIGHT
+            } else if (_turns!=-1 && _time==-1 && _heading==-1) {
+                // LOITER_TURNS
 
-            wp.command = 31;                // MAV_CMD_NAV_LOITER_TO_ALT
-            wp.param1 = _heading;           // Heading Required (0 = False)
-            wp.param2 = _radius;            // If positive loiter clockwise, negative counter-clockwise, 0 means no change to standard loiter.
-            wp.param4 = _forward_moving;    // Forward moving aircraft this sets exit xtrack location: 0 for center of loiter wp, 1 for exit location
+                wp.command = 18;                // MAV_CMD_NAV_LOITER_TURNS
+                wp.param1 = _turns;             // Number of turns.
+                wp.param3 = _radius;            // Radius around waypoint. If positive loiter clockwise, else counter-clockwise (not multicopters)
+                wp.param4 = _forward_moving;    // this sets exit xtrack location: 0 for center of loiter wp, 1 for exit location.
+                                                // Else, this is desired yaw angle. NaN for unchanged. (not multicopters)
 
+            } else if (_turns==-1 && _time!=-1 && _heading==-1) {
+                // LOITER_TIME
+
+                wp.command = 19;                // MAV_CMD_NAV_LOITER_TIME
+                wp.param1 = _time;              // Loiter time.
+                wp.param2 = 0;                  // Leave loiter circle only once heading towards the next waypoint (0 = False)
+                wp.param3 = _radius;            // Radius around waypoint. If positive loiter clockwise, else counter-clockwise. (not multicopters)
+                wp.param4 = _forward_moving;    // this sets exit xtrack location: 0 for center of loiter wp, 1 for exit location.
+                                                // Else, this is desired yaw angle. NaN for unchanged. (not multicopters)
+
+            } else if (_turns==-1 && _time==-1 && _heading!=-1) {
+                // LOITER_HEIGHT
+
+                wp.command = 31;                // MAV_CMD_NAV_LOITER_TO_ALT
+                wp.param1 = _heading;           // Heading Required (0 = False)
+                wp.param2 = _radius;            // If positive loiter clockwise, negative counter-clockwise, 0 means no change to standard loiter. (not multicopters)
+                wp.param4 = _forward_moving;    // Forward moving aircraft this sets exit xtrack location: 0 for center of loiter wp, 1 for exit location (not multicopters)
+
+            }
         }
 
         mission_waypointlist_.waypoints.push_back(wp);
@@ -730,63 +747,84 @@ void Mission::addLoiterWpList(const std::vector<geometry_msgs::PoseStamped>& _lo
 }
 
 
-void Mission::addLandWpList(const std::vector<geometry_msgs::PoseStamped>& _land_poses, float _loit_heading, float _loit_radius, float _loit_forward_moving, float _abort_alt, float _precision_mode) {
-
-    std::vector<geographic_msgs::GeoPoseStamped> usf;   // Stands for Uniformized Spatial Field
-    usf = uniformizeSpatialField(_land_poses);
+void Mission::addLandWp(const geometry_msgs::PoseStamped& _land_pose, float _abort_alt, float _precision_mode) {
 
     if (airframe_type_==AirframeType::FIXED_WING) {
-        mavros_msgs::Waypoint wp1;
-        wp1.frame = 2;              // FRAME_MISSION
-        wp1.command = 189;          // MAV_CMD_DO_LAND_START
-        wp1.is_current = false;
-        wp1.autocontinue = true;
-
-        mission_waypointlist_.waypoints.push_back(wp1);
-
-        mavros_msgs::Waypoint wp2;
-
-        if (usf.size() != 2) { ROS_ERROR("Error in [%d]-th waypoint, posestamped list length is not 2!", (int) mission_waypointlist_.waypoints.size()); }
-
-        wp2 = geoPoseStampedtoGlobalWaypoint(usf[0]);
-
-        wp2.frame = 3;              // FRAME_GLOBAL_REL_ALT
-        wp2.command = 31;           // MAV_CMD_NAV_LOITER_TO_ALT
-        wp2.is_current = false;
-        wp2.autocontinue = true;
-        wp2.param1 = _loit_heading;             // Heading Required (0 = False)
-        wp2.param2 = _loit_radius;              // If positive loiter clockwise, negative counter-clockwise, 0 means no change to standard loiter.
-        wp2.param4 = _loit_forward_moving;      // Forward moving aircraft this sets exit xtrack location: 0 for center of loiter wp, 1 for exit location
-
-        mission_waypointlist_.waypoints.push_back(wp2);
-
-        mavros_msgs::Waypoint wp3;
-        wp3 = geoPoseStampedtoGlobalWaypoint(usf.back());
-        wp3.frame = 3;              // FRAME_GLOBAL_REL_ALT
-        wp3.command = 21;           // MAV_CMD_NAV_LAND
-        wp3.is_current = false;
-        wp3.autocontinue = true;
-        wp3.param1 = _abort_alt;                                    // Minimum target altitude if landing is aborted (0 = undefined/use system default).
-        wp3.param2 = _precision_mode;                               // Precision land mode.
-        wp3.param4 = getYaw(usf.back().pose.orientation);    // Desired yaw angle. NaN to use the current system yaw heading mode (e.g. yaw towards next waypoint, yaw to home, etc.).
-
-        mission_waypointlist_.waypoints.push_back(wp3);
-
-    } else {
-        if (usf.size() != 1) { ROS_ERROR("Error in [%d]-th waypoint set, posestamped list lenght is not 1!", (int) mission_waypointlist_.waypoints.size()); } //TODO(JoseAndres): Update errors
-
-        mavros_msgs::Waypoint wp;
-        wp = geoPoseStampedtoGlobalWaypoint(usf.back());
-        wp.frame = 3;              // FRAME_GLOBAL_REL_ALT
-        wp.command = 21;           // MAV_CMD_NAV_LAND
-        wp.is_current = false;
-        wp.autocontinue = true;
-        wp.param1 = _abort_alt;                             // Minimum target altitude if landing is aborted (0 = undefined/use system default).
-        wp.param2 = _precision_mode;                        // Precision land mode.
-        wp.param4 = getYaw(usf.back().pose.orientation);    // Desired yaw angle. NaN to use the current system yaw heading mode (e.g. yaw towards next waypoint, yaw to home, etc.).
-
-        mission_waypointlist_.waypoints.push_back(wp);
+        ROS_ERROR("Error in [%d]-th waypoint, _loiter_to_alt_start_landing_pose missing in Mission::addLandWp for airframe type fixed wing.", (int) mission_waypointlist_.waypoints.size());
+        exit(EXIT_FAILURE);
     }
+
+    std::vector<geometry_msgs::PoseStamped> land_pose_vector;
+    land_pose_vector.push_back(_land_pose);
+
+    std::vector<geographic_msgs::GeoPoseStamped> usf;   // Stands for Uniformized Spatial Field
+    usf = uniformizeSpatialField(land_pose_vector);
+
+    if (usf.size() != 1) { ROS_ERROR("Error in [%d]-th waypoint set, posestamped list lenght is not 1!", (int) mission_waypointlist_.waypoints.size()); } //TODO(JoseAndres): Update errors
+
+    mavros_msgs::Waypoint wp;
+    wp = geoPoseStampedtoGlobalWaypoint(usf.back());
+    wp.frame = 3;              // FRAME_GLOBAL_REL_ALT
+    wp.command = 21;           // MAV_CMD_NAV_LAND
+    wp.is_current = false;
+    wp.autocontinue = true;
+    wp.param1 = _abort_alt;                             // Minimum target altitude if landing is aborted (0 = undefined/use system default).
+    wp.param2 = _precision_mode;                        // Precision land mode.
+    wp.param4 = getYaw(usf.back().pose.orientation);    // Desired yaw angle. NaN to use the current system yaw heading mode (e.g. yaw towards next waypoint, yaw to home, etc.).
+
+    mission_waypointlist_.waypoints.push_back(wp);
+}
+
+
+void Mission::addLandWp(const geometry_msgs::PoseStamped& _loiter_to_alt_start_landing_pose, const geometry_msgs::PoseStamped& _land_pose, float _loit_radius, float _loit_heading, float _loit_forward_moving, float _abort_alt, float _precision_mode) {
+
+    if (airframe_type_==AirframeType::MULTICOPTER || airframe_type_==AirframeType::VTOL) {
+        ROS_ERROR("Error in [%d]-th waypoint, _loiter_to_alt_start_landing_pose included in Mission::addLandWp when not needed if your airframe is not a fixed wing. Please review your plan.", (int) mission_waypointlist_.waypoints.size());
+        exit(EXIT_FAILURE);
+    }
+
+    std::vector<geometry_msgs::PoseStamped> land_pose_vector;
+    land_pose_vector.push_back(_loiter_to_alt_start_landing_pose);
+    land_pose_vector.push_back(_land_pose);
+
+    std::vector<geographic_msgs::GeoPoseStamped> usf;   // Stands for Uniformized Spatial Field
+    usf = uniformizeSpatialField(land_pose_vector);
+
+    mavros_msgs::Waypoint wp1;
+    wp1.frame = 2;              // FRAME_MISSION
+    wp1.command = 189;          // MAV_CMD_DO_LAND_START
+    wp1.is_current = false;
+    wp1.autocontinue = true;
+
+    mission_waypointlist_.waypoints.push_back(wp1);
+
+    mavros_msgs::Waypoint wp2;
+
+    if (usf.size() != 2) { ROS_ERROR("Error in [%d]-th waypoint, posestamped list length is not 2!", (int) mission_waypointlist_.waypoints.size()); }
+
+    wp2 = geoPoseStampedtoGlobalWaypoint(usf[0]);
+
+    wp2.frame = 3;              // FRAME_GLOBAL_REL_ALT
+    wp2.command = 31;           // MAV_CMD_NAV_LOITER_TO_ALT
+    wp2.is_current = false;
+    wp2.autocontinue = true;
+    wp2.param1 = _loit_heading;             // Heading Required. Leave loiter circle only once heading towards the next waypoint (0 = False)
+    wp2.param2 = _loit_radius;              // If positive loiter clockwise, negative counter-clockwise, 0 means no change to standard loiter.
+    wp2.param4 = _loit_forward_moving;      // Forward moving aircraft this sets exit xtrack location: 0 for center of loiter wp, 1 for exit location
+
+    mission_waypointlist_.waypoints.push_back(wp2);
+
+    mavros_msgs::Waypoint wp3;
+    wp3 = geoPoseStampedtoGlobalWaypoint(usf.back());
+    wp3.frame = 3;              // FRAME_GLOBAL_REL_ALT
+    wp3.command = 21;           // MAV_CMD_NAV_LAND
+    wp3.is_current = false;
+    wp3.autocontinue = true;
+    wp3.param1 = _abort_alt;                             // Minimum target altitude if landing is aborted (0 = undefined/use system default).
+    wp3.param2 = _precision_mode;                        // Precision land mode.
+    wp3.param4 = getYaw(usf.back().pose.orientation);    // Desired yaw angle. NaN to use the current system yaw heading mode (e.g. yaw towards next waypoint, yaw to home, etc.).
+
+    mission_waypointlist_.waypoints.push_back(wp3);
 }
 
 

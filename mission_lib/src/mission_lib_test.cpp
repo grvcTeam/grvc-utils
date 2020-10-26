@@ -76,31 +76,38 @@ int main(int _argc, char** _argv) {
     pass_pose.pose.position.y = 0;
     pass_pose.pose.position.z = 30;
     pass_poses.push_back(pass_pose);
-    float acceptance_radius = 10;
-    float orbit_distance = 0;
+
+    // Loiter WP parameters:
+    std::vector<geometry_msgs::PoseStamped> loiter_poses;
+    geometry_msgs::PoseStamped loiter_pose;
+    loiter_pose.pose.position.x = 250;
+    loiter_pose.pose.position.y = 0;
+    loiter_pose.pose.position.z = 30;
+    loiter_poses.push_back(loiter_pose);
+    loiter_pose.pose.position.x = 0;
+    loiter_pose.pose.position.y = 250;
+    loiter_pose.pose.position.z = 30;
+    loiter_poses.push_back(loiter_pose);
 
     // Land WP parameters:
-    std::vector<geometry_msgs::PoseStamped> land_poses;
+    geometry_msgs::PoseStamped loiter_to_alt_start_landing_pose;
+    loiter_to_alt_start_landing_pose.pose.position.x = 200;
+    loiter_to_alt_start_landing_pose.pose.position.y = 0;
+    loiter_to_alt_start_landing_pose.pose.position.z = 20;
     geometry_msgs::PoseStamped land_pose;
-    land_pose.pose.position.x = 200;
-    land_pose.pose.position.y = 0;
-    land_pose.pose.position.z = 20;
-    land_poses.push_back(land_pose);
     land_pose.pose.position.x = 0;
     land_pose.pose.position.y = 0;
     land_pose.pose.position.z = 0;
-    land_poses.push_back(land_pose);
-    float loit_heading = 0;
-    float loit_radius = 0;
-    float loit_forward_moving = 1;
-    float abort_alt = 0;
-    float precision_mode = 0;
 
     grvc::mission_ns::Mission mission;
     std::cin.get();
-    mission.addTakeOffWp(takeoff_pose, minimum_pitch);
-    mission.addPassWpList(pass_poses, acceptance_radius, orbit_distance);
-    mission.addLandWpList(land_poses, loit_heading, loit_radius, loit_forward_moving, abort_alt, precision_mode);
+    mission.addTakeOffWp(takeoff_pose);
+    // mission.addTakeOffWp(takeoff_pose, minimum_pitch);
+    mission.addPassWpList(pass_poses);
+    // mission.addLoiterWpList(loiter_poses, 20);
+    // mission.addLoiterWpList(loiter_poses);
+    // mission.addLandWp(loiter_to_alt_start_landing_pose, land_pose); // For FIXED_WING
+    mission.addLandWp(land_pose);                                   // For VTOL and MULTICOPTER
     mission.print();
     mission.push();
     mission.start();
