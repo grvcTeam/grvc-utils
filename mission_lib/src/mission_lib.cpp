@@ -607,7 +607,7 @@ void Mission::clear() {
 }
 
 
-void Mission::addTakeOffWp(const geometry_msgs::PoseStamped& _takeoff_pose, float _minimum_pitch, float _yaw_angle) {
+void Mission::addTakeOffWp(const geometry_msgs::PoseStamped& _takeoff_pose, float _minimum_pitch) {
 
     mavros_msgs::Waypoint wp;
 
@@ -626,10 +626,16 @@ void Mission::addTakeOffWp(const geometry_msgs::PoseStamped& _takeoff_pose, floa
     wp = geoPoseStampedtoGlobalWaypoint(usf[0]);
 
     wp.frame = 3;           // FRAME_GLOBAL_REL_ALT
-    wp.command = 22;        // MAV_CMD_NAV_TAKEOFF
+
+    if (airframe_type_==AirframeType::VTOL) {
+        wp.command = 84;    // MAV_CMD_NAV_VTOL_TAKEOFF
+    } else  {
+        wp.command = 22;    // MAV_CMD_NAV_TAKEOFF
+        wp.param1 = _minimum_pitch; // (if airspeed sensor present), desired pitch without sensor
+    }
+
     wp.is_current = mission_waypointlist_.waypoints.size()==0? true : false;
     wp.autocontinue = true;
-    wp.param1 = _minimum_pitch; // (if airspeed sensor present), desired pitch without sensor
     wp.param4 = yaw_angle;      // (if magnetometer present), ignored without magnetometer. NaN for unchanged.
 
     mission_waypointlist_.waypoints.push_back(wp);
@@ -729,41 +735,58 @@ void Mission::addLandWpList(const std::vector<geometry_msgs::PoseStamped>& _land
     std::vector<geographic_msgs::GeoPoseStamped> usf;   // Stands for Uniformized Spatial Field
     usf = uniformizeSpatialField(_land_poses);
 
-    mavros_msgs::Waypoint wp1;
-    wp1.frame = 2;              // FRAME_MISSION
-    wp1.command = 189;          // MAV_CMD_DO_LAND_START
-    wp1.is_current = false;
-    wp1.autocontinue = true;
+    if (airframe_type_==AirframeType::FIXED_WING) {
+        mavros_msgs::Waypoint wp1;
+        wp1.frame = 2;              // FRAME_MISSION
+        wp1.command = 189;          // MAV_CMD_DO_LAND_START
+        wp1.is_current = false;
+        wp1.autocontinue = true;
 
-    mission_waypointlist_.waypoints.push_back(wp1);
+        mission_waypointlist_.waypoints.push_back(wp1);
 
-    mavros_msgs::Waypoint wp2;
+        mavros_msgs::Waypoint wp2;
 
-    if (usf.size() != 2) { ROS_ERROR("Error in [%d]-th waypoint, posestamped list length is not 2!", (int) mission_waypointlist_.waypoints.size()); }
+        if (usf.size() != 2) { ROS_ERROR("Error in [%d]-th waypoint, posestamped list length is not 2!", (int) mission_waypointlist_.waypoints.size()); }
 
-    wp2 = geoPoseStampedtoGlobalWaypoint(usf[0]);
+        wp2 = geoPoseStampedtoGlobalWaypoint(usf[0]);
 
-    wp2.frame = 3;              // FRAME_GLOBAL_REL_ALT
-    wp2.command = 31;           // MAV_CMD_NAV_LOITER_TO_ALT
-    wp2.is_current = false;
-    wp2.autocontinue = true;
-    wp2.param1 = _loit_heading;             // Heading Required (0 = False)
-    wp2.param2 = _loit_radius;              // If positive loiter clockwise, negative counter-clockwise, 0 means no change to standard loiter.
-    wp2.param4 = _loit_forward_moving;      // Forward moving aircraft this sets exit xtrack location: 0 for center of loiter wp, 1 for exit location
+        wp2.frame = 3;              // FRAME_GLOBAL_REL_ALT
+        wp2.command = 31;           // MAV_CMD_NAV_LOITER_TO_ALT
+        wp2.is_current = false;
+        wp2.autocontinue = true;
+        wp2.param1 = _loit_heading;             // Heading Required (0 = False)
+        wp2.param2 = _loit_radius;              // If positive loiter clockwise, negative counter-clockwise, 0 means no change to standard loiter.
+        wp2.param4 = _loit_forward_moving;      // Forward moving aircraft this sets exit xtrack location: 0 for center of loiter wp, 1 for exit location
 
-    mission_waypointlist_.waypoints.push_back(wp2);
+        mission_waypointlist_.waypoints.push_back(wp2);
 
-    mavros_msgs::Waypoint wp3;
-    wp3 = geoPoseStampedtoGlobalWaypoint(usf.back());
-    wp3.frame = 3;              // FRAME_GLOBAL_REL_ALT
-    wp3.command = 21;           // MAV_CMD_NAV_LAND
-    wp3.is_current = false;
-    wp3.autocontinue = true;
-    wp3.param1 = _abort_alt;                                    // Minimum target altitude if landing is aborted (0 = undefined/use system default).
-    wp3.param2 = _precision_mode;                               // Precision land mode.
-    wp3.param4 = getYaw(usf.back().pose.orientation);    // Desired yaw angle. NaN to use the current system yaw heading mode (e.g. yaw towards next waypoint, yaw to home, etc.).
+        mavros_msgs::Waypoint wp3;
+        wp3 = geoPoseStampedtoGlobalWaypoint(usf.back());
+        wp3.frame = 3;              // FRAME_GLOBAL_REL_ALT
+        wp3.command = 21;           // MAV_CMD_NAV_LAND
+        wp3.is_current = false;
+        wp3.autocontinue = true;
+        wp3.param1 = _abort_alt;                                    // Minimum target altitude if landing is aborted (0 = undefined/use system default).
+        wp3.param2 = _precision_mode;                               // Precision land mode.
+        wp3.param4 = getYaw(usf.back().pose.orientation);    // Desired yaw angle. NaN to use the current system yaw heading mode (e.g. yaw towards next waypoint, yaw to home, etc.).
 
-    mission_waypointlist_.waypoints.push_back(wp3);
+        mission_waypointlist_.waypoints.push_back(wp3);
+
+    } else {
+        if (usf.size() != 1) { ROS_ERROR("Error in [%d]-th waypoint set, posestamped list lenght is not 1!", (int) mission_waypointlist_.waypoints.size()); } //TODO(JoseAndres): Update errors
+
+        mavros_msgs::Waypoint wp;
+        wp = geoPoseStampedtoGlobalWaypoint(usf.back());
+        wp.frame = 3;              // FRAME_GLOBAL_REL_ALT
+        wp.command = 21;           // MAV_CMD_NAV_LAND
+        wp.is_current = false;
+        wp.autocontinue = true;
+        wp.param1 = _abort_alt;                             // Minimum target altitude if landing is aborted (0 = undefined/use system default).
+        wp.param2 = _precision_mode;                        // Precision land mode.
+        wp.param4 = getYaw(usf.back().pose.orientation);    // Desired yaw angle. NaN to use the current system yaw heading mode (e.g. yaw towards next waypoint, yaw to home, etc.).
+
+        mission_waypointlist_.waypoints.push_back(wp);
+    }
 }
 
 

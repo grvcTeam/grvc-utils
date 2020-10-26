@@ -82,13 +82,13 @@ int main(int _argc, char** _argv) {
     // Land WP parameters:
     std::vector<geometry_msgs::PoseStamped> land_poses;
     geometry_msgs::PoseStamped land_pose;
-    land_pose.pose.position.x = 100;
+    land_pose.pose.position.x = 200;
     land_pose.pose.position.y = 0;
     land_pose.pose.position.z = 20;
     land_poses.push_back(land_pose);
     land_pose.pose.position.x = 0;
     land_pose.pose.position.y = 0;
-    land_pose.pose.position.z = 10;
+    land_pose.pose.position.z = 0;
     land_poses.push_back(land_pose);
     float loit_heading = 0;
     float loit_radius = 0;

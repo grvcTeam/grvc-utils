@@ -62,7 +62,7 @@ public:
     // Set home position
     bool setHome(bool _set_z);
 
-    void addTakeOffWp(const geometry_msgs::PoseStamped& _takeoff_pose, float _minimum_pitch, float _yaw_angle=-1);
+    void addTakeOffWp(const geometry_msgs::PoseStamped& _takeoff_pose, float _minimum_pitch=15);
     void addPassWpList(const std::vector<geometry_msgs::PoseStamped>& _pass_poses, float _acceptance_radius, float _orbit_distance, float _speed=-1);
     void addLoiterWpList(const std::vector<geometry_msgs::PoseStamped>& _loiter_poses, float _radius, float _forward_moving=-1, float _turns=-1, float _time=-1, float _heading=-1, float _speed=-1);
     void addLandWpList(const std::vector<geometry_msgs::PoseStamped>& _land_poses, float _loit_heading, float _loit_radius, float _loit_forward_moving, float _abort_alt, float _precision_mode);
