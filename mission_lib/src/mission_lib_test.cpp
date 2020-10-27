@@ -100,7 +100,7 @@ int main(int _argc, char** _argv) {
     land_pose.pose.position.z = 0;
 
     grvc::mission_ns::Mission mission;
-    std::cin.get();
+    std::cin.get();         // Wait for user input.
     mission.addTakeOffWp(takeoff_pose);
     // mission.addTakeOffWp(takeoff_pose, minimum_pitch);
     mission.addPassWpList(pass_poses);
@@ -109,8 +109,40 @@ int main(int _argc, char** _argv) {
     // mission.addLandWp(loiter_to_alt_start_landing_pose, land_pose); // For FIXED_WING
     mission.addLandWp(land_pose);                                   // For VTOL and MULTICOPTER
     mission.print();
+    mission.start();        // Still no mission pushed, so do nothing.
+    std::cout << "active_waypoint_ = " << mission.activeWaypoint() << std::endl;    // Should give -1
     mission.push();
-    mission.start();
+    std::cout << "active_waypoint_ = " << mission.activeWaypoint() << std::endl;    // Should give -1
+    mission.start();        // Take off and start again (mission not cleared in the UAV).
+
+    std::cin.get();         // Wait for user input.
+    mission.start();        // Already flying, should do nothing.
+
+    std::cin.get();         // Wait for user input.
+    std::cout << "active_waypoint_ = " << mission.activeWaypoint() << std::endl;    // Should give whatever wp is doing.
+    std::cin.get();         // Wait for user input.
+    std::cout << "active_waypoint_ = " << mission.activeWaypoint() << std::endl;    // Should give whatever wp is doing.
+
+    std::cin.get();         // Wait for user input.
+    // If you wait until land, and arm or do "start", the mission will start again because the mission is still stored in the UAV.
+    std::cout << "active_waypoint_ = " << mission.activeWaypoint() << std::endl;    // Should give -1
+    mission.start();        // Take off and start again (mission not cleared in the UAV).
+
+    // // Second mission to override the previous one:
+    // std::cin.get();         // Wait for user input.
+    // // mission.clear();
+    // // mission.pushClear();    // Not needed if you are going to push another mission. Will "hold" current position (hovering if MULTICOPTER or orbit if VTOL or FIXED_WING) until new mission pushed.
+    // // std::cin.get();         // Wait for user input.
+    // mission.addTakeOffWp(takeoff_pose);
+    // // mission.addTakeOffWp(takeoff_pose, minimum_pitch);
+    // mission.addPassWpList(pass_poses);
+    // // mission.addLoiterWpList(loiter_poses, 20);
+    // // mission.addLoiterWpList(loiter_poses);
+    // // mission.addLandWp(loiter_to_alt_start_landing_pose, land_pose); // For FIXED_WING
+    // mission.addLandWp(land_pose);                                   // For VTOL and MULTICOPTER
+    // mission.print();
+    // mission.push();
+    // mission.start();     // ALREADY FLYING! Will be ignored.
 
     while (ros::ok()) { sleep(1); }
 

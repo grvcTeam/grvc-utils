@@ -62,19 +62,20 @@ public:
     // Set home position
     bool setHome(bool _set_z);
 
-    void addTakeOffWp(const geometry_msgs::PoseStamped& _takeoff_pose, float _minimum_pitch=15);
-    void addPassWpList(const std::vector<geometry_msgs::PoseStamped>& _pass_poses, float _speed=-1, float _acceptance_radius=10, float _pass_radius=0);
-    void addLoiterWpList(const std::vector<geometry_msgs::PoseStamped>& _loiter_poses, float _time=-1, float _radius=75, float _speed=-1, float _turns=-1, float _forward_moving=0, float _heading=-1);
-    void addLandWp(const geometry_msgs::PoseStamped& _land_pose, float _abort_alt=0, float _precision_mode=0);      // For VTOL and MULTICOPTER
-    void addLandWp(const geometry_msgs::PoseStamped& _loiter_to_alt_start_landing_pose, const geometry_msgs::PoseStamped& _land_pose, float _loit_radius=75, float _loit_heading=1, float _loit_forward_moving=1, float _abort_alt=0, float _precision_mode=0); // For FIXED_WING
-    void addSpeedWp(float _speed);
-    void print() const;
-    void clear();
-    bool push();
-    bool pushClear();
-    void start();
+    void addTakeOffWp(const geometry_msgs::PoseStamped& _takeoff_pose, float _minimum_pitch=15);    // For FIXED_WING try that the pose is far enough straight to the direction of the plane. For VTOL and MULTICOPTER any point is valid.
+    void addPassWpList(const std::vector<geometry_msgs::PoseStamped>& _pass_poses, float _speed=-1, float _acceptance_radius=10, float _pass_radius=0);     // Add simple waypoint where the UAV will pass.
+    void addLoiterWpList(const std::vector<geometry_msgs::PoseStamped>& _loiter_poses, float _time=-1, float _radius=75, float _speed=-1, float _turns=-1, float _forward_moving=0, float _heading=-1);     // Add loiter waypoint where the UAV will wait or "hold" an amount of time defined by the user.
+    void addLandWp(const geometry_msgs::PoseStamped& _land_pose, float _abort_alt=0, float _precision_mode=0);      // Landing for VTOL and MULTICOPTER
+    void addLandWp(const geometry_msgs::PoseStamped& _loiter_to_alt_start_landing_pose, const geometry_msgs::PoseStamped& _land_pose, float _loit_radius=75, float _loit_heading=1, float _loit_forward_moving=1, float _abort_alt=0, float _precision_mode=0); // Landing for FIXED_WING (needed an extra point for where to start the landing and reach the desired landing height, recommended far enough from the actual landing site)
+    void print() const; // Print in the terminal the local mission in the Mission class (not the one pushed to the UAV).
+    void clear();       // Clear the local mission in the Mission class (not the one pushed to the UAV).
+    bool push();        // Overwrite the mission in the UAV with the one local one. If already flying the mission will start automatically (ignoring the takeoff waypoint).
+    bool pushClear();   // Clear the mission in the UAV. If flying it will "hold" current position (hovering if MULTICOPTER, orbit if VTOL or FIXED_WING) until new mission pushed.
+    void start();       // Take off and start mission if there is a mission pushed to the UAV, if there is no mission do nothing. If already flying and another mission is pushed it's not needed to do "start" again, it will start automatically when pushed (ignoring the takeoff waypoint).
 
 private:
+    void addSpeedWp(float _speed);  // Change the horizontal speed of the UAV. Recommended to change it direcly with addPassWpList and addLoiterWpList.
+
     // Library is initialized and ready to send missions?
     bool isReady() const;
 
@@ -104,6 +105,8 @@ private:
     // Control
     bool mavros_has_pose_ = false;
     bool mavros_has_geo_pose_ = false;
+
+    bool uav_has_empty_mission_ = true;
 
     // Ros Communication
     ros::ServiceClient flight_mode_client_;
@@ -136,7 +139,7 @@ private:
     tf2_ros::StaticTransformBroadcaster * static_tf_broadcaster_;
     std::map<std::string, geometry_msgs::TransformStamped> cached_transforms_;
 
-    int active_waypoint_ = -1;      // seq nr of the currently active waypoint of the mission: waypoints[current_seq].is_current == True.
+    int active_waypoint_ = -1;      // seq nr of the currently active waypoint of the mission: waypoints[current_seq].is_current == True. -1 if not running a mission.
 
     std::thread spin_thread_;       // Ros spinning threads for running callbacks
 };

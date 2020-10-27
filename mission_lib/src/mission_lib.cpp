@@ -141,11 +141,19 @@ Mission::Mission()
     mavros_cur_state_sub_ = nh.subscribe<mavros_msgs::State>(state_topic.c_str(), 1, \
         [this](const mavros_msgs::State::ConstPtr& _msg) {
             this->mavros_state_ = *_msg;
+            if (uav_has_empty_mission_ || !mavros_state_.armed) {
+                this->active_waypoint_ = -1;
+            }
     });
 
     mavros_cur_mission_sub_ = nh.subscribe<mavros_msgs::WaypointList>(waypoints_mission_topic.c_str(), 1, \
         [this](const mavros_msgs::WaypointList::ConstPtr& _msg) {
-            this->active_waypoint_ = _msg->current_seq;
+            uav_has_empty_mission_ = _msg->waypoints.size()==0 ? true : false;
+            if (uav_has_empty_mission_ || !mavros_state_.armed) {
+                this->active_waypoint_ = -1;
+            } else {
+                this->active_waypoint_ = _msg->current_seq;
+            }
     });
 
     // Make communications spin!
@@ -596,9 +604,15 @@ bool Mission::pushClear() {
 
 
 void Mission::start() {
-    setFlightMode("AUTO.MISSION");
-    arm(false); 
-    arm(true);
+    if (uav_has_empty_mission_) {
+        ROS_ERROR("Mission start() called but the UAV doesn't have a mission. Ignoring the start() call.");
+    } else if (active_waypoint_ != -1) {
+        ROS_ERROR("Mission start() called but the UAV is already doing a mission. Ignoring the start() call.");
+    } else {
+        setFlightMode("AUTO.MISSION");
+        arm(false); 
+        arm(true);
+    }
 }
 
 
