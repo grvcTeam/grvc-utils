@@ -48,7 +48,7 @@ find_package(catkin REQUIRED COMPONENTS
 ###################################
 catkin_package(
   INCLUDE_DIRS include
-#  LIBRARIES 
+  LIBRARIES ${PROJECT_NAME}
   CATKIN_DEPENDS mavros mavros_msgs roscpp geodesy
 #  DEPENDS system_lib
 )
