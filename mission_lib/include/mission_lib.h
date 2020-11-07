@@ -58,6 +58,8 @@ public:
     sensor_msgs::NavSatFix geoPose() const { return this->cur_geo_pose_; }
     // Latest velocity estimation of the robot
     geometry_msgs::TwistStamped velocity() const { return this->cur_vel_; }
+    // Latest battery estimation of the robot
+    float battery() const { return this->battery_percentage_; }
 
     // Current waypoint of the list that define de mission (-1 if not running a mission or disarmed)
     int activeWaypoint() const { return this->active_waypoint_; };
@@ -100,6 +102,7 @@ private:
     sensor_msgs::NavSatFix      cur_geo_pose_;
     geometry_msgs::TwistStamped cur_vel_;
     mavros_msgs::State          mavros_state_;
+    float                       battery_percentage_;
 
     // Mission
     geographic_msgs::GeoPoint origin_geo_;
@@ -123,6 +126,7 @@ private:
     ros::Subscriber mavros_cur_vel_sub_;
     ros::Subscriber mavros_cur_state_sub_;
     ros::Subscriber mavros_cur_mission_sub_;
+    ros::Subscriber drone_telemetry_sub_;
     tf2_ros::Buffer tf_buffer_;
     tf2_ros::TransformListener tf_listener_;
 

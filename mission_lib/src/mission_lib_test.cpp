@@ -111,8 +111,10 @@ int main(int _argc, char** _argv) {
     mission.print();
     mission.start();        // Still no mission pushed, so do nothing.
     std::cout << "active_waypoint_ = " << mission.activeWaypoint() << std::endl;    // Should give -1
+    std::cout << "battery_percentage_ = " << mission.battery() << std::endl;
     mission.push();
     std::cout << "active_waypoint_ = " << mission.activeWaypoint() << std::endl;    // Should give -1
+    std::cout << "battery_percentage_ = " << mission.battery() << std::endl;
     mission.start();        // Take off and start again (mission not cleared in the UAV).
 
     std::cin.get();         // Wait for user input.
@@ -120,12 +122,15 @@ int main(int _argc, char** _argv) {
 
     std::cin.get();         // Wait for user input.
     std::cout << "active_waypoint_ = " << mission.activeWaypoint() << std::endl;    // Should give whatever wp is doing.
+    std::cout << "battery_percentage_ = " << mission.battery() << std::endl;
     std::cin.get();         // Wait for user input.
     std::cout << "active_waypoint_ = " << mission.activeWaypoint() << std::endl;    // Should give whatever wp is doing.
+    std::cout << "battery_percentage_ = " << mission.battery() << std::endl;
 
     std::cin.get();         // Wait for user input.
     // If you wait until land, and arm or do "start", the mission will start again because the mission is still stored in the UAV.
     std::cout << "active_waypoint_ = " << mission.activeWaypoint() << std::endl;    // Should give -1
+    std::cout << "battery_percentage_ = " << mission.battery() << std::endl;
     mission.start();        // Take off and start again (mission not cleared in the UAV).
 
     // // Second mission to override the previous one:

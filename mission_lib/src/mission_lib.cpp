@@ -37,6 +37,7 @@
 #include <mavros_msgs/ParamSet.h>
 #include <mavros_msgs/WaypointPush.h>
 #include <mavros_msgs/WaypointClear.h>
+#include <sensor_msgs/BatteryState.h>
 
 #define FIRMWARE_VERSION_TYPE_DEV 0 /* development release | */
 #define FIRMWARE_VERSION_TYPE_ALPHA 64 /* alpha release | */
@@ -125,6 +126,7 @@ Mission::Mission()
 #endif
     std::string state_topic = mavros_ns + "/state";
     std::string waypoints_mission_topic = mavros_ns + "/mission/waypoints";
+    std::string drone_telemetry_topic = mavros_ns + "/battery";
 
     flight_mode_client_ = nh.serviceClient<mavros_msgs::SetMode>(set_mode_srv.c_str());
     arming_client_ = nh.serviceClient<mavros_msgs::CommandBool>(arming_srv.c_str());
@@ -171,6 +173,10 @@ Mission::Mission()
             } else {
                 this->active_waypoint_ = _msg->current_seq;
             }
+    });
+    drone_telemetry_sub_ = nh.subscribe<sensor_msgs::BatteryState>(drone_telemetry_topic.c_str(), 1, \
+        [this](const sensor_msgs::BatteryState::ConstPtr& _msg) {
+            battery_percentage_ = _msg->percentage; 
     });
 
     // Make communications spin!
