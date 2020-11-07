@@ -106,8 +106,8 @@ int main(int _argc, char** _argv) {
     mission.addPassWpList(pass_poses);
     // mission.addLoiterWpList(loiter_poses, 20);
     // mission.addLoiterWpList(loiter_poses);
-    // mission.addLandWp(loiter_to_alt_start_landing_pose, land_pose); // For FIXED_WING
-    mission.addLandWp(land_pose);                                   // For VTOL and MULTICOPTER
+    mission.addLandWp(loiter_to_alt_start_landing_pose, land_pose); // For FIXED_WING
+    // mission.addLandWp(land_pose);                                   // For VTOL and MULTICOPTER
     mission.print();
     mission.start();        // Still no mission pushed, so do nothing.
     std::cout << "active_waypoint_ = " << mission.activeWaypoint() << std::endl;    // Should give -1

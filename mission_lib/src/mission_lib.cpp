@@ -47,6 +47,23 @@
 
 namespace grvc { namespace mission_ns {
 
+Mission::Mission(int _uav_id)
+    : tf_listener_(tf_buffer_)
+{
+    robot_id_ = _uav_id;
+    Mission();
+}
+
+
+Mission::Mission(int _uav_id, std::string _pose_frame_id)
+    : tf_listener_(tf_buffer_)
+{
+    robot_id_ = _uav_id;
+    pose_frame_id_ = _pose_frame_id;
+    Mission();
+}
+
+
 Mission::Mission()
     : tf_listener_(tf_buffer_)
 {
@@ -59,8 +76,8 @@ Mission::Mission()
 
     // Parse arguments
     ros::NodeHandle pnh("~");
-    pnh.param<int>("uav_id", robot_id_, 1);
-    pnh.param<std::string>("pose_frame_id", pose_frame_id_, "");
+    if (robot_id_==-1)      pnh.param<int>("uav_id", robot_id_, 1);
+    if (pose_frame_id_=="") pnh.param<std::string>("pose_frame_id", pose_frame_id_, "");
 
     // Assure id uniqueness
     id_is_unique_ = true;

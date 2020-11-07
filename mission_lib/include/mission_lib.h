@@ -48,6 +48,9 @@ class Mission {
 public:
 
     Mission();
+    Mission(int _uav_id);
+    Mission(int _uav_id, std::string _pose_frame_id);
+
     ~Mission();
 
     // Latest pose estimation of the robot
@@ -56,7 +59,7 @@ public:
     // Latest velocity estimation of the robot
     geometry_msgs::TwistStamped velocity() const { return this->cur_vel_; }
 
-    // Current waypoint of the list that define de mission
+    // Current waypoint of the list that define de mission (-1 if not running a mission or disarmed)
     int activeWaypoint() const { return this->active_waypoint_; };
 
     // Set home position
@@ -123,7 +126,7 @@ private:
     tf2_ros::Buffer tf_buffer_;
     tf2_ros::TransformListener tf_listener_;
 
-    int robot_id_;
+    int robot_id_ = -1;
     bool id_is_unique_;
 
     enum struct AutopilotType {PX4, APM, UNKNOWN};
@@ -139,7 +142,7 @@ private:
     tf2_ros::StaticTransformBroadcaster * static_tf_broadcaster_;
     std::map<std::string, geometry_msgs::TransformStamped> cached_transforms_;
 
-    int active_waypoint_ = -1;      // seq nr of the currently active waypoint of the mission: waypoints[current_seq].is_current == True. -1 if not running a mission.
+    int active_waypoint_ = -1;      // seq nr of the currently active waypoint of the mission: waypoints[current_seq].is_current == True. -1 if not running a mission or disarmed.
 
     std::thread spin_thread_;       // Ros spinning threads for running callbacks
 };
