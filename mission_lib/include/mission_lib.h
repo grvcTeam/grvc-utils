@@ -77,6 +77,7 @@ public:
     bool push();        // Overwrite the mission in the UAV with the one local one. If already flying the mission will start automatically (ignoring the takeoff waypoint).
     bool pushClear();   // Clear the mission in the UAV. If flying it will "hold" current position (hovering if MULTICOPTER, orbit if VTOL or FIXED_WING) until new mission pushed.
     void start();       // Take off and start mission if there is a mission pushed to the UAV, if there is no mission do nothing. If already flying and another mission is pushed it's not needed to do "start" again, it will start automatically when pushed (ignoring the takeoff waypoint).
+    void stop();        // Change flight mode into auto return to launch (AUTO.RTL) and land directly the UAV using the landing waypoints existing on the mission.
 
 private:
     void addSpeedWp(float _speed);  // Change the horizontal speed of the UAV. Recommended to change it direcly with addPassWpList and addLoiterWpList.
@@ -133,7 +134,7 @@ private:
     int robot_id_ = -1;
     bool id_is_unique_;
 
-    enum struct AutopilotType {PX4, APM, UNKNOWN};
+    enum struct AutopilotType {PX4, APM, DJI, UNKNOWN};
     AutopilotType autopilot_type_ = AutopilotType::UNKNOWN;
 
     enum struct AirframeType {FIXED_WING, MULTICOPTER, VTOL, OTHER, UNKNOWN};

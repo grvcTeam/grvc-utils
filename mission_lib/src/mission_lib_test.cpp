@@ -133,6 +133,9 @@ int main(int _argc, char** _argv) {
     std::cout << "battery_percentage_ = " << mission.battery() << std::endl;
     mission.start();        // Take off and start again (mission not cleared in the UAV).
 
+    mission.stop();
+    std::cout << "Mission should be stopped and the UAV heading to land." << std::endl;
+
     // // Second mission to override the previous one:
     // std::cin.get();         // Wait for user input.
     // // mission.clear();

@@ -639,6 +639,11 @@ void Mission::start() {
 }
 
 
+void Mission::stop() {
+    setFlightMode("AUTO.RTL");
+}
+
+
 void Mission::clear() {
     mission_waypointlist_.waypoints.clear();
 }
