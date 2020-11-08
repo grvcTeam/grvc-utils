@@ -43,6 +43,9 @@
 
 namespace grvc { namespace mission_ns {
 
+enum struct AutopilotType {PX4, APM, DJI, UNKNOWN};
+enum struct AirframeType {FIXED_WING, MULTICOPTER, VTOL, OTHER, UNKNOWN};
+
 class Mission {
 
 public:
@@ -56,8 +59,10 @@ public:
     // Latest pose estimation of the robot
     geometry_msgs::PoseStamped pose();
     sensor_msgs::NavSatFix geoPose() const { return this->cur_geo_pose_; }
+
     // Latest velocity estimation of the robot
     geometry_msgs::TwistStamped velocity() const { return this->cur_vel_; }
+
     // Latest battery estimation of the robot
     float battery() const { return this->battery_percentage_; }
 
@@ -66,6 +71,10 @@ public:
 
     // Set home position
     bool setHome(bool _set_z);
+
+    // Getters for the autopilot and airframe type:
+    AutopilotType autopilotType() const { return this->autopilot_type_; };
+    AirframeType airframeType() const { return this->airframe_type_; };
 
     void addTakeOffWp(const geometry_msgs::PoseStamped& _takeoff_pose, float _minimum_pitch=15);    // For FIXED_WING try that the pose is far enough straight to the direction of the plane. For VTOL and MULTICOPTER any point is valid.
     void addPassWpList(const std::vector<geometry_msgs::PoseStamped>& _pass_poses, float _speed=-1, float _acceptance_radius=10, float _pass_radius=0);     // Add simple waypoint where the UAV will pass.
@@ -134,10 +143,8 @@ private:
     int robot_id_ = -1;
     bool id_is_unique_;
 
-    enum struct AutopilotType {PX4, APM, DJI, UNKNOWN};
     AutopilotType autopilot_type_ = AutopilotType::UNKNOWN;
 
-    enum struct AirframeType {FIXED_WING, MULTICOPTER, VTOL, OTHER, UNKNOWN};
     AirframeType airframe_type_ = AirframeType::UNKNOWN;
 
     std::string pose_frame_id_;
