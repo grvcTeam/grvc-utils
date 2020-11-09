@@ -52,7 +52,7 @@ Mission::Mission(int _uav_id)
     : tf_listener_(tf_buffer_)
 {
     robot_id_ = _uav_id;
-    Mission();
+    constructorFunction();
 }
 
 
@@ -61,13 +61,29 @@ Mission::Mission(int _uav_id, std::string _pose_frame_id)
 {
     robot_id_ = _uav_id;
     pose_frame_id_ = _pose_frame_id;
-    Mission();
+    constructorFunction();
 }
 
 
 Mission::Mission()
     : tf_listener_(tf_buffer_)
 {
+    constructorFunction();
+}
+
+
+Mission::Mission(const Mission& _mission) : tf_listener_(tf_buffer_) {
+    robot_id_ = _mission.robot_id_;
+    pose_frame_id_ = _mission.pose_frame_id_;
+    constructorFunction();
+}
+
+
+void Mission::constructorFunction() {
+    if (robot_id_==-1 && !ros::param::has("~uav_id")) {
+        return;
+    }
+
     // Error if ROS is not initialized
     if (!ros::isInitialized()) {
         // Init ros node
@@ -77,7 +93,7 @@ Mission::Mission()
 
     // Parse arguments
     ros::NodeHandle pnh("~");
-    if (robot_id_==-1)      pnh.param<int>("uav_id", robot_id_, 1);
+    if (robot_id_==-1)      ros::param::get("~uav_id",robot_id_);
     if (pose_frame_id_=="") pnh.param<std::string>("pose_frame_id", pose_frame_id_, "");
 
     // Assure id uniqueness
@@ -108,9 +124,15 @@ Mission::Mission()
 
     ROS_INFO("Mission_lib constructor with robot id [%d]", robot_id_);
 
+    if (ros::this_node::getNamespace() == "/") {
+        std::string ns_uav_prefix;
+        ros::param::get("~ns_uav_prefix",ns_uav_prefix);
+        node_name_space_ = "/" + ns_uav_prefix + std::to_string(robot_id_)+"/";
+    }
+
     // Init ros communications
     ros::NodeHandle nh;
-    std::string mavros_ns = "mavros";
+    std::string mavros_ns = node_name_space_+"mavros";
     std::string set_mode_srv = mavros_ns + "/set_mode";
     std::string arming_srv = mavros_ns + "/cmd/arming";
     std::string get_param_srv = mavros_ns + "/param/get";
@@ -215,6 +237,8 @@ Mission::Mission()
     // setParam("NAV_DLL_ACT",0);   // To switch mode
     // setParam("MIS_DIST_1WP",0);
     // setParam("MIS_DIST_WPS",0);  // Minimum distance between wps. default 900m
+
+    ROS_INFO("Mission_lib with robot id [%d] running!", robot_id_);
 }
 
 
@@ -350,7 +374,12 @@ void Mission::initHomeFrame() {
     local_start_pos_ << 0.0, 0.0, 0.0;
 
     // Get frame prefix from namespace
-    std::string ns = ros::this_node::getNamespace();
+    std::string ns;
+    if (ros::this_node::getNamespace() == "/") {
+        std::string ns_uav_prefix;
+        ros::param::get("~ns_uav_prefix",ns_uav_prefix);
+        ns = "/" + ns_uav_prefix + std::to_string(robot_id_);
+    }
     uav_frame_id_ = ns + "/base_link";
     uav_home_frame_id_ = ns + "/odom";
     while (uav_frame_id_[0]=='/') {
@@ -474,8 +503,9 @@ void Mission::setParam(const std::string& _param_id, int _param_value) {
 void Mission::getAutopilotInformation() {
     // Call vehicle information service
     ros::NodeHandle nh;
-    ros::ServiceClient vehicle_information_cl = nh.serviceClient<mavros_msgs::VehicleInfoGet>("mavros/vehicle_info_get");
-    ros::service::waitForService("mavros/vehicle_info_get");
+    std::string vehicle_information_string_cl = node_name_space_+"mavros/vehicle_info_get";
+    ros::ServiceClient vehicle_information_cl = nh.serviceClient<mavros_msgs::VehicleInfoGet>(vehicle_information_string_cl);
+    ros::service::waitForService(vehicle_information_string_cl);
     std::this_thread::sleep_for(std::chrono::milliseconds(1000));
     mavros_msgs::VehicleInfoGet vehicle_info_srv;
     if (!vehicle_information_cl.call(vehicle_info_srv)) {

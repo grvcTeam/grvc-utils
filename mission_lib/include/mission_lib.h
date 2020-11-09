@@ -53,6 +53,7 @@ public:
     Mission();
     Mission(int _uav_id);
     Mission(int _uav_id, std::string _pose_frame_id);
+    void constructorFunction();
 
     ~Mission();
 
@@ -76,6 +77,7 @@ public:
     AutopilotType autopilotType() const { return this->autopilot_type_; };
     AirframeType airframeType() const { return this->airframe_type_; };
 
+    // Functions to build, delete, print, push, start and stop the mission:
     void addTakeOffWp(const geometry_msgs::PoseStamped& _takeoff_pose, float _minimum_pitch=15);    // For FIXED_WING try that the pose is far enough straight to the direction of the plane. For VTOL and MULTICOPTER any point is valid.
     void addPassWpList(const std::vector<geometry_msgs::PoseStamped>& _pass_poses, float _speed=-1, float _acceptance_radius=10, float _pass_radius=0);     // Add simple waypoint where the UAV will pass.
     void addLoiterWpList(const std::vector<geometry_msgs::PoseStamped>& _loiter_poses, float _time=-1, float _radius=75, float _speed=-1, float _turns=-1, float _forward_moving=0, float _heading=-1);     // Add loiter waypoint where the UAV will wait or "hold" an amount of time defined by the user.
@@ -87,6 +89,9 @@ public:
     bool pushClear();   // Clear the mission in the UAV. If flying it will "hold" current position (hovering if MULTICOPTER, orbit if VTOL or FIXED_WING) until new mission pushed.
     void start();       // Take off and start mission if there is a mission pushed to the UAV, if there is no mission do nothing. If already flying and another mission is pushed it's not needed to do "start" again, it will start automatically when pushed (ignoring the takeoff waypoint).
     void stop();        // Change flight mode into auto return to launch (AUTO.RTL) and land directly the UAV using the landing waypoints existing on the mission.
+
+    Mission(const Mission& _mission);
+    Mission& operator=(const Mission& _mission) { return *this; }
 
 private:
     void addSpeedWp(float _speed);  // Change the horizontal speed of the UAV. Recommended to change it direcly with addPassWpList and addLoiterWpList.
@@ -153,6 +158,8 @@ private:
     Eigen::Vector3d local_start_pos_;
     tf2_ros::StaticTransformBroadcaster * static_tf_broadcaster_;
     std::map<std::string, geometry_msgs::TransformStamped> cached_transforms_;
+
+    std::string node_name_space_;
 
     int active_waypoint_ = -1;      // seq nr of the currently active waypoint of the mission: waypoints[current_seq].is_current == True. -1 if not running a mission or disarmed.
 
