@@ -77,6 +77,9 @@ public:
     AutopilotType autopilotType() const { return this->autopilot_type_; };
     AirframeType airframeType() const { return this->airframe_type_; };
 
+    // Getter for the uav identifier (may be redundant, but useful for debug):
+    int id() const { return this->robot_id_; };
+
     // Functions to build, delete, print, push, start and stop the mission:
     void addTakeOffWp(const geometry_msgs::PoseStamped& _takeoff_pose, float _minimum_pitch=15);    // For FIXED_WING try that the pose is far enough straight to the direction of the plane. For VTOL and MULTICOPTER any point is valid.
     void addPassWpList(const std::vector<geometry_msgs::PoseStamped>& _pass_poses, float _speed=-1, float _acceptance_radius=10, float _pass_radius=0);     // Add simple waypoint where the UAV will pass.
