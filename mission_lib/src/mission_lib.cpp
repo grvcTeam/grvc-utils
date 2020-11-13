@@ -185,6 +185,7 @@ void Mission::constructorFunction() {
             if (uav_has_empty_mission_ || !mavros_state_.armed) {
                 this->active_waypoint_ = -1;
             }
+            armed_ = mavros_state_.armed;
     });
 
     mavros_cur_mission_sub_ = nh.subscribe<mavros_msgs::WaypointList>(waypoints_mission_topic.c_str(), 1, \
