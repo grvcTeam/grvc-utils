@@ -48,6 +48,13 @@
 
 namespace grvc { namespace mission_ns {
 
+Mission::Mission()
+    : tf_listener_(tf_buffer_)
+{
+    constructorFunction();
+}
+
+
 Mission::Mission(int _uav_id)
     : tf_listener_(tf_buffer_)
 {
@@ -65,13 +72,6 @@ Mission::Mission(int _uav_id, std::string _pose_frame_id)
 }
 
 
-Mission::Mission()
-    : tf_listener_(tf_buffer_)
-{
-    constructorFunction();
-}
-
-
 Mission::Mission(const Mission& _mission) : tf_listener_(tf_buffer_) {
     robot_id_ = _mission.robot_id_;
     pose_frame_id_ = _mission.pose_frame_id_;
@@ -80,7 +80,7 @@ Mission::Mission(const Mission& _mission) : tf_listener_(tf_buffer_) {
 
 
 void Mission::constructorFunction() {
-    if (robot_id_==-1 && !ros::param::has("~uav_id")) {
+    if (robot_id_==-1 && !ros::param::has("~uav_id")) { // Don't construct the class without ID (e.g., when declaring a Mission object expecting to initialize it later).
         return;
     }
 
@@ -101,7 +101,7 @@ void Mission::constructorFunction() {
     std::vector<int> uav_ids;
     if (ros::param::has("/uav_ids")) {
         ros::param::get("/uav_ids", uav_ids);
-        for (auto id: uav_ids) {
+        for (const auto& id: uav_ids) {
             if (id == robot_id_) {
                 id_is_unique_ = false;
             }
@@ -162,7 +162,6 @@ void Mission::constructorFunction() {
     mavros_cur_pose_sub_ = nh.subscribe<geometry_msgs::PoseStamped>(pose_topic.c_str(), 1, \
         [this](const geometry_msgs::PoseStamped::ConstPtr& _msg) {
             cur_pose_ = *_msg;
-            mavros_has_pose_ = true;
     });
     mavros_cur_vel_sub_ = nh.subscribe<geometry_msgs::TwistStamped>(vel_topic_local.c_str(), 1, \
         [this](const geometry_msgs::TwistStamped::ConstPtr& _msg) {
@@ -251,7 +250,7 @@ Mission::~Mission() {
         std::vector<int> uav_ids;
         ros::param::get("/uav_ids", uav_ids);
         std::vector<int> new_uav_ids;
-        for (auto id: uav_ids) {
+        for (const auto& id: uav_ids) {
             if (id != robot_id_) {
                 new_uav_ids.push_back(id);
             }
@@ -306,27 +305,17 @@ void Mission::arm(bool _arm) {
 
 
 bool Mission::setHome(bool _set_z) {
-    // The following check was removed when this library became unaware of the state, so now PX4 will be the one complaining when unable to setHome.
-    // // Check required state
-    // if ((state().state != fixed_wing_lib::State::LANDED_DISARMED) && (state().state != fixed_wing_lib::State::LANDED_ARMED)) {
-    //     ROS_ERROR("Unable to setHome: not LANDED_*!");
-    //     return false;
-    // }
+    // Check if landed disarmed:
+    if (armed()) {
+        ROS_ERROR("Unable to setHome: not landed disarmed!");
+        return false;
+    }
 
     double z_offset = _set_z ? cur_pose_.pose.position.z : 0.0;
     local_start_pos_ = -Eigen::Vector3d(cur_pose_.pose.position.x, \
         cur_pose_.pose.position.y, z_offset);
 
     return true;
-}
-
-
-bool Mission::isReady() const {
-    if (ros::param::has("~map_origin_geo")) {
-        return mavros_has_geo_pose_;
-    } else {
-        return mavros_has_pose_ && (fabs(cur_pose_.pose.position.y) > 1e-8);  // Means the filter has converged!
-    }
 }
 
 
@@ -702,7 +691,7 @@ void Mission::addTakeOffWp(const geometry_msgs::PoseStamped& _takeoff_pose, floa
 
     if (airframe_type_==AirframeType::VTOL) {
         wp.command = 84;    // MAV_CMD_NAV_VTOL_TAKEOFF
-    } else  {
+    } else {
         wp.command = 22;    // MAV_CMD_NAV_TAKEOFF
         wp.param1 = _minimum_pitch; // (if airspeed sensor present), desired pitch without sensor
     }
@@ -726,7 +715,7 @@ void Mission::addPassWpList(const std::vector<geometry_msgs::PoseStamped>& _pass
         addSpeedWp(_speed);
     }
 
-    for ( auto & geoposestamped : usf ) {
+    for (const auto& geoposestamped : usf ) {
 
         mavros_msgs::Waypoint wp = geoPoseStampedtoGlobalWaypoint(geoposestamped);
         wp.frame = 3;           // FRAME_GLOBAL_REL_ALT
@@ -755,7 +744,7 @@ void Mission::addLoiterWpList(const std::vector<geometry_msgs::PoseStamped>& _lo
         addSpeedWp(_speed);
     }
 
-    for ( auto & geoposestamped : usf ) {
+    for (const auto& geoposestamped : usf ) {
 
         mavros_msgs::Waypoint wp;
         wp = geoPoseStampedtoGlobalWaypoint( geoposestamped);
@@ -923,7 +912,7 @@ void Mission::print() const {
     std::cout << "current_seq = " << mission_waypointlist_.current_seq << std::endl;
     std::cout << "waypoints.size() = " << mission_waypointlist_.waypoints.size() << std::endl;
     int i=0;
-    for (mavros_msgs::Waypoint waypoint : mission_waypointlist_.waypoints) {
+    for (const mavros_msgs::Waypoint& waypoint : mission_waypointlist_.waypoints) {
         i++;
         std::cout << std::endl;
         std::cout << "waypoints [ " << i << " ].x_lat = " << waypoint.x_lat << std::endl;
@@ -950,7 +939,7 @@ std::vector<geographic_msgs::GeoPoseStamped> Mission::uniformizeSpatialField( co
 
     std::vector<geographic_msgs::GeoPoseStamped> uniformized;
 
-    for ( auto & posestamped : _posestamped_list ) {
+    for (const auto& posestamped : _posestamped_list ) {
         geographic_msgs::GeoPoseStamped homogen_world_pos;
         std::string waypoint_frame_id = tf2::getFrameId(posestamped);
         bool success = true;
