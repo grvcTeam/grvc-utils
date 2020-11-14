@@ -59,29 +59,29 @@ public:
 
     // Latest pose estimation of the robot
     geometry_msgs::PoseStamped pose();
-    sensor_msgs::NavSatFix geoPose() const { return this->cur_geo_pose_; }
+    sensor_msgs::NavSatFix geoPose() const { return cur_geo_pose_; }
 
     // Latest velocity estimation of the robot
-    geometry_msgs::TwistStamped velocity() const { return this->cur_vel_; }
+    geometry_msgs::TwistStamped velocity() const { return cur_vel_; }
 
     // Latest battery estimation of the robot
-    float battery() const { return this->battery_percentage_; }
+    float battery() const { return battery_percentage_; }
 
     // Current waypoint of the list that define de mission (-1 if not running a mission or disarmed)
-    int activeWaypoint() const { return this->active_waypoint_; };
+    int activeWaypoint() const { return active_waypoint_; };
 
     // Set home position
     bool setHome(bool _set_z);
 
     // Getters for the autopilot and airframe type:
-    AutopilotType autopilotType() const { return this->autopilot_type_; };
-    AirframeType airframeType() const { return this->airframe_type_; };
+    AutopilotType autopilotType() const { return autopilot_type_; };
+    AirframeType airframeType() const { return airframe_type_; };
 
     // Getter for the uav identifier (may be redundant, but useful for debug):
-    int id() const { return this->robot_id_; };
+    int id() const { return robot_id_; };
 
     // Getter for knowing if the UAV is armed or disarmed:
-    bool armed() const { return this->armed_; };
+    bool armed() const { return armed_; };
 
     // Functions to build, delete, print, push, start and stop the mission:
     void addTakeOffWp(const geometry_msgs::PoseStamped& _takeoff_pose, float _minimum_pitch=15);    // For FIXED_WING try that the pose is far enough straight to the direction of the plane. For VTOL and MULTICOPTER any point is valid.

@@ -161,29 +161,29 @@ void Mission::constructorFunction() {
 
     mavros_cur_pose_sub_ = nh.subscribe<geometry_msgs::PoseStamped>(pose_topic.c_str(), 1, \
         [this](const geometry_msgs::PoseStamped::ConstPtr& _msg) {
-            this->cur_pose_ = *_msg;
-            this->mavros_has_pose_ = true;
+            cur_pose_ = *_msg;
+            mavros_has_pose_ = true;
     });
     mavros_cur_vel_sub_ = nh.subscribe<geometry_msgs::TwistStamped>(vel_topic_local.c_str(), 1, \
         [this](const geometry_msgs::TwistStamped::ConstPtr& _msg) {
-            this->cur_vel_ = *_msg;
-            this->cur_vel_.header.frame_id = this->uav_home_frame_id_;
+            cur_vel_ = *_msg;
+            cur_vel_.header.frame_id = uav_home_frame_id_;
     });
     mavros_cur_geo_pose_sub_ = nh.subscribe<sensor_msgs::NavSatFix>(geo_pose_topic.c_str(), 1, \
         [this](const sensor_msgs::NavSatFix::ConstPtr& _msg) {
-            this->cur_geo_pose_ = *_msg;
-            if (!this->mavros_has_geo_pose_) {
+            cur_geo_pose_ = *_msg;
+            if (!mavros_has_geo_pose_) {
                 if (_msg->position_covariance[0] < 1.2 && _msg->position_covariance[0] > 0 && _msg->header.seq > 100) {
-                    this->mavros_has_geo_pose_ = true;
+                    mavros_has_geo_pose_ = true;
                     // ROS_INFO("Has Geo Pose! %f",_msg->position_covariance[0]);
                 }
             }
     });
     mavros_cur_state_sub_ = nh.subscribe<mavros_msgs::State>(state_topic.c_str(), 1, \
         [this](const mavros_msgs::State::ConstPtr& _msg) {
-            this->mavros_state_ = *_msg;
+            mavros_state_ = *_msg;
             if (uav_has_empty_mission_ || !mavros_state_.armed) {
-                this->active_waypoint_ = -1;
+                active_waypoint_ = -1;
             }
             armed_ = mavros_state_.armed;
     });
@@ -192,9 +192,9 @@ void Mission::constructorFunction() {
         [this](const mavros_msgs::WaypointList::ConstPtr& _msg) {
             uav_has_empty_mission_ = _msg->waypoints.size()==0 ? true : false;
             if (uav_has_empty_mission_ || !mavros_state_.armed) {
-                this->active_waypoint_ = -1;
+                active_waypoint_ = -1;
             } else {
-                this->active_waypoint_ = _msg->current_seq;
+                active_waypoint_ = _msg->current_seq;
             }
     });
     drone_telemetry_sub_ = nh.subscribe<sensor_msgs::BatteryState>(drone_telemetry_topic.c_str(), 1, \
@@ -308,7 +308,7 @@ void Mission::arm(bool _arm) {
 bool Mission::setHome(bool _set_z) {
     // The following check was removed when this library became unaware of the state, so now PX4 will be the one complaining when unable to setHome.
     // // Check required state
-    // if ((this->state().state != fixed_wing_lib::State::LANDED_DISARMED) && (this->state().state != fixed_wing_lib::State::LANDED_ARMED)) {
+    // if ((state().state != fixed_wing_lib::State::LANDED_DISARMED) && (state().state != fixed_wing_lib::State::LANDED_ARMED)) {
     //     ROS_ERROR("Unable to setHome: not LANDED_*!");
     //     return false;
     // }
@@ -325,7 +325,7 @@ bool Mission::isReady() const {
     if (ros::param::has("~map_origin_geo")) {
         return mavros_has_geo_pose_;
     } else {
-        return mavros_has_pose_ && (fabs(this->cur_pose_.pose.position.y) > 1e-8);  // Means the filter has converged!
+        return mavros_has_pose_ && (fabs(cur_pose_.pose.position.y) > 1e-8);  // Means the filter has converged!
     }
 }
 
@@ -397,7 +397,7 @@ void Mission::initHomeFrame() {
         ros::param::get("~home_pose",home_pose);
     } else if (ros::param::has("~map_origin_geo")) {
         ROS_WARN("Be careful, you should only use this mode with RTK GPS!");
-        while (!this->mavros_has_geo_pose_) {
+        while (!mavros_has_geo_pose_) {
             std::this_thread::sleep_for(std::chrono::milliseconds(200));
         }
         std::vector<double> map_origin_geo(3, 0.0);
@@ -634,7 +634,7 @@ bool Mission::push() {
 bool Mission::pushClear() {
     // The following check was removed when this library became unaware of the state, so now PX4 will be the one complaining when unable to puxhClear.
     // // Check required state
-    // if ((this->state().state != fixed_wing_lib::State::LANDED_DISARMED) && (this->state().state != fixed_wing_lib::State::LANDED_ARMED)) {
+    // if ((state().state != fixed_wing_lib::State::LANDED_DISARMED) && (state().state != fixed_wing_lib::State::LANDED_ARMED)) {
     //     ROS_ERROR("Unable to pushClear: not LANDED_*!");
     // }
 
