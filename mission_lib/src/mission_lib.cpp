@@ -87,7 +87,7 @@ void Mission::constructorFunction() {
     // Error if ROS is not initialized
     if (!ros::isInitialized()) {
         // Init ros node
-        ROS_ERROR("Mission_lib needs ROS to be initialized. Initialize ROS before creating a Mission object.");
+        ROS_ERROR("Mission_lib [%d] needs ROS to be initialized. Initialize ROS before creating a Mission object.", robot_id_);
         exit(EXIT_FAILURE);
     }
 
@@ -192,8 +192,14 @@ void Mission::constructorFunction() {
             uav_has_empty_mission_ = _msg->waypoints.size()==0 ? true : false;
             if (uav_has_empty_mission_ || !mavros_state_.armed) {
                 active_waypoint_ = -1;
+                low_battery_warning_ = false;
             } else {
                 active_waypoint_ = _msg->current_seq;
+                if (!low_battery_warning_ && active_waypoint_>0 && _msg->waypoints[active_waypoint_].command==21) {
+                    low_battery_warning_ = true;
+                    system("file_path_returned_by_command=$(find ~ -name 'low_battery_warning.py' 2>/dev/null); $file_path_returned_by_command &");
+                    ROS_INFO("Mission_lib [%d]: Low battery warning dialog.", robot_id_);
+                }
             }
     });
     drone_telemetry_sub_ = nh.subscribe<sensor_msgs::BatteryState>(drone_telemetry_topic.c_str(), 1, \
@@ -216,13 +222,13 @@ void Mission::constructorFunction() {
 
     // Error if the autpilot is not PX4, as right now is the only one supported by this library.
     if (autopilot_type_!=AutopilotType::PX4) {
-        ROS_ERROR("Mission_lib only works for PX4 Autopilot. Aborting Mission constructor.");
+        ROS_ERROR("Mission_lib [%d] only works for PX4 Autopilot. Aborting Mission constructor.", robot_id_);
         exit(EXIT_FAILURE);
     }
 
     // Error if the airframe is not a fixed wing, multicopter or VTOL, as right now they are the ones supported by this library.
     if (airframe_type_==AirframeType::OTHER) {
-        ROS_ERROR("Mission_lib only works for fixed wing, multicopter or VTOL airframe. Aborting Mission constructor.");
+        ROS_ERROR("Mission_lib [%d] only works for fixed wing, multicopter or VTOL airframe. Aborting Mission constructor.", robot_id_);
         exit(EXIT_FAILURE);
     }
 
@@ -267,17 +273,17 @@ void Mission::setFlightMode(const std::string& _flight_mode) {
     // Set mode: unabortable?
     while (mavros_state_.mode != _flight_mode && ros::ok()) {
         if (!flight_mode_client_.call(flight_mode_service)) {
-            ROS_ERROR("Error in set flight mode [%s] service calling!", _flight_mode.c_str());
+            ROS_ERROR("Mission lib [%d]: Error in set flight mode [%s] service calling!", robot_id_, _flight_mode.c_str());
         }
         std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 #ifdef MAVROS_VERSION_BELOW_0_20_0
-        ROS_INFO("Set flight mode [%s] response.success = %s", _flight_mode.c_str(), \
+        ROS_INFO("Mission lib [%d]: Set flight mode [%s] response.success = %s", robot_id_, _flight_mode.c_str(), \
             flight_mode_service.response.success ? "true" : "false");
 #else
-        ROS_INFO("Set flight mode [%s] response.success = %s", _flight_mode.c_str(), \
+        ROS_INFO("Mission lib [%d]: Set flight mode [%s] response.success = %s", robot_id_, _flight_mode.c_str(), \
             flight_mode_service.response.mode_sent ? "true" : "false");
 #endif
-        ROS_INFO("Trying to set [%s] mode; mavros_state_.mode = [%s]", _flight_mode.c_str(), mavros_state_.mode.c_str());
+        ROS_INFO("Mission lib [%d]: Trying to set [%s] mode; mavros_state_.mode = [%s]", robot_id_, _flight_mode.c_str(), mavros_state_.mode.c_str());
     }
 }
 
@@ -289,17 +295,17 @@ void Mission::arm(bool _arm) {
     // Set mode: unabortable?
     while (mavros_state_.armed != _arm && ros::ok()) {
         if (!arming_client_.call(arm_service)) {
-            ROS_ERROR("Error in [%s] service calling!", _arm ? "arming" : "disarming");
+            ROS_ERROR("Mission lib [%d]: Error in [%s] service calling!", robot_id_, _arm ? "arming" : "disarming");
         }
         std::this_thread::sleep_for(std::chrono::milliseconds(300));
 #ifdef MAVROS_VERSION_BELOW_0_20_0
-        ROS_INFO("Set [%s] response.success = %s", _arm ? "armed" : "disarmed", \
+        ROS_INFO("Mission lib [%d]: Set [%s] response.success = %s", robot_id_, _arm ? "armed" : "disarmed", \
             arm_service.response.success ? "true" : "false");
 #else
         // ROS_INFO("Set [%s] response.success = %s", _arm ? "armed" : "disarmed", \
         //     arm_service.response.mode_sent ? "true" : "false");
 #endif
-        ROS_INFO("  Trying to [%s]; mavros_state_.armed = [%s]", _arm ? "arm" : "disarm", mavros_state_.armed ? "true" : "false");
+        ROS_INFO("Mission lib [%d]: Trying to [%s]; mavros_state_.armed = [%s]", robot_id_, _arm ? "arm" : "disarm", mavros_state_.armed ? "true" : "false");
     }
 }
 
@@ -307,7 +313,7 @@ void Mission::arm(bool _arm) {
 bool Mission::setHome(bool _set_z) {
     // Check if landed disarmed:
     if (armed()) {
-        ROS_ERROR("Unable to setHome: not landed disarmed!");
+        ROS_ERROR("Mission lib [%d]: Unable to setHome, not landed disarmed!", robot_id_);
         return false;
     }
 
@@ -342,7 +348,7 @@ geometry_msgs::PoseStamped Mission::pose() {
                 transformToPoseFrame = tf_buffer_.lookupTransform(pose_frame_id_,uav_home_frame_id_, ros::Time(0), ros::Duration(1.0));
                 cached_transforms_[pose_frame_id_map] = transformToPoseFrame; // Save transform in cache
             } catch (tf2::TransformException &ex) {
-                ROS_WARN("In pose: %s. Returning non transformed pose.", ex.what());
+                ROS_WARN("Mission lib [%d]: in pose %s, returning non transformed pose.", robot_id_, ex.what());
                 return out;
             }
         } else {
@@ -385,7 +391,7 @@ void Mission::initHomeFrame() {
     if (ros::param::has("~home_pose")) {
         ros::param::get("~home_pose",home_pose);
     } else if (ros::param::has("~map_origin_geo")) {
-        ROS_WARN("Be careful, you should only use this mode with RTK GPS!");
+        ROS_WARN("Mission lib [%d]: Be careful, you should only use this mode with RTK GPS!", robot_id_);
         while (!mavros_has_geo_pose_) {
             std::this_thread::sleep_for(std::chrono::milliseconds(200));
         }
@@ -399,7 +405,7 @@ void Mission::initHomeFrame() {
         actual_coordinate_geo.longitude = cur_geo_pose_.longitude;
         actual_coordinate_geo.altitude = 0; //cur_geo_pose_.altitude;
         if(map_origin_geo[0]==0 && map_origin_geo[1]==0) {
-            ROS_WARN("Map origin is set to 0. Define map_origin_geo param by a vector in format [lat,lon,alt].");
+            ROS_WARN("Mission lib [%d]: Map origin is set to 0. Define map_origin_geo param by a vector in format [lat,lon,alt].", robot_id_);
         }
         geometry_msgs::Point32 map_origin_cartesian = geographic_to_cartesian (actual_coordinate_geo, origin_geo);
 
@@ -407,7 +413,7 @@ void Mission::initHomeFrame() {
         home_pose[1] = map_origin_cartesian.y;
         home_pose[2] = map_origin_cartesian.z;
     } else {
-        ROS_WARN("No home pose or map origin was defined. Home frame will be equal to map.");
+        ROS_WARN("Mission lib [%d]: No home pose or map origin was defined. Home frame will be equal to map.", robot_id_);
     }
 
     if (ros::param::has("~map_origin_geo")) {
@@ -439,7 +445,7 @@ void Mission::initHomeFrame() {
             transform_to_map = tf_buffer_.lookupTransform(parent_frame, "map", ros::Time(0), ros::Duration(2.0));
             static_transformStamped.transform.rotation = transform_to_map.transform.rotation;
         } catch (tf2::TransformException &ex) {
-            ROS_WARN("In initHomeFrame: %s. Publishing static TF in ENU.", ex.what());
+            ROS_WARN("Mission lib [%d]: In initHomeFrame, %s. Publishing static TF in ENU.", robot_id_, ex.what());
         }
     }
 
@@ -454,13 +460,13 @@ double Mission::updateParam(const std::string& _param_id) {
     if (get_param_client_.call(get_param_service) && get_param_service.response.success) {
         mavros_params_[_param_id] = get_param_service.response.value.integer? 
             get_param_service.response.value.integer : get_param_service.response.value.real;
-        ROS_DEBUG("Parameter [%s] value is [%f]", get_param_service.request.param_id.c_str(), mavros_params_[_param_id]);
+        ROS_DEBUG("Mission lib [%d]: Parameter [%s] value is [%f]", robot_id_, get_param_service.request.param_id.c_str(), mavros_params_[_param_id]);
     } else if (mavros_params_.count(_param_id)) {
-        ROS_WARN("Error in get param [%s] service calling, leaving current value [%f]", 
+        ROS_WARN("Mission lib [%d]: Error in get param [%s] service calling, leaving current value [%f]", robot_id_, 
             get_param_service.request.param_id.c_str(), mavros_params_[_param_id]);
     } else {
         mavros_params_[_param_id] = 0.0;
-        ROS_ERROR("Error in get param [%s] service calling, initializing it to zero", 
+        ROS_ERROR("Mission lib [%d]: Error in get param [%s] service calling, initializing it to zero", robot_id_, 
             get_param_service.request.param_id.c_str());
     }
     return mavros_params_[_param_id];
@@ -475,17 +481,17 @@ void Mission::setParam(const std::string& _param_id, int _param_value) {
 
     while (updateParam(_param_id) != _param_value && ros::ok()) {
         if (!set_param_client_.call(set_param_service)) {
-            ROS_ERROR("Error in set param [%s] service calling!", _param_id.c_str());
+            ROS_ERROR("Mission lib [%d]: Error in set param [%s] service calling!", robot_id_, _param_id.c_str());
         }
         std::this_thread::sleep_for(std::chrono::milliseconds(300));
 #ifdef MAVROS_VERSION_BELOW_0_20_0
-        ROS_INFO("Set param [%s] response.success = %s", _param_id.c_str(), \
+        ROS_INFO("Mission lib [%d]: Set param [%s] response.success = %s", robot_id_, _param_id.c_str(), \
             set_param_service.response.success ? "true" : "false");
 #else
         // ROS_INFO("Set param [%s] response.success = %s", _param_id.c_str(), \
         //     set_param_service.response.mode_sent ? "true" : "false");
 #endif
-        ROS_INFO("Trying to set [%s] param to [%10d]", _param_id.c_str(), _param_value);
+        ROS_INFO("Mission lib [%d]: Trying to set [%s] param to [%10d]", robot_id_, _param_id.c_str(), _param_value);
     }
 }
 
@@ -499,12 +505,12 @@ void Mission::getAutopilotInformation() {
     std::this_thread::sleep_for(std::chrono::milliseconds(1000));
     mavros_msgs::VehicleInfoGet vehicle_info_srv;
     if (!vehicle_information_cl.call(vehicle_info_srv)) {
-        ROS_ERROR("Failed to get vehicle information: service call failed");
+        ROS_ERROR("Mission lib [%d]: Failed to get vehicle information, service call failed", robot_id_);
         exit(0);
     }
     std::this_thread::sleep_for(std::chrono::milliseconds(200));
     if (!vehicle_info_srv.response.success) {
-        ROS_ERROR("Failed to get vehicle information");
+        ROS_ERROR("Mission lib [%d]: Failed to get vehicle information", robot_id_);
         exit(0);
     }
     // Autopilot type
@@ -516,7 +522,7 @@ void Mission::getAutopilotInformation() {
             autopilot_type_ = AutopilotType::PX4;
             break;
         default:
-            ROS_ERROR("Mission [%d]: Wrong autopilot type: %s", robot_id_, mavros::utils::to_string((mavlink::minimal::MAV_AUTOPILOT) vehicle_info_srv.response.vehicles[0].autopilot).c_str());
+            ROS_ERROR("Mission lib [%d]: Wrong autopilot type: %s", robot_id_, mavros::utils::to_string((mavlink::minimal::MAV_AUTOPILOT) vehicle_info_srv.response.vehicles[0].autopilot).c_str());
             exit(0);
     }
 
@@ -583,14 +589,14 @@ void Mission::getAutopilotInformation() {
             airframe_type_ = AirframeType::OTHER;
             break;
         default:
-            ROS_ERROR("Mission [%d]: Wrong airframe type: %s", robot_id_, mavros::utils::to_string((mavlink::minimal::MAV_TYPE) vehicle_info_srv.response.vehicles[0].type).c_str());
+            ROS_ERROR("Mission lib [%d]: Wrong airframe type: %s", robot_id_, mavros::utils::to_string((mavlink::minimal::MAV_TYPE) vehicle_info_srv.response.vehicles[0].type).c_str());
             exit(0);
     }
 
     std::string autopilot_version = std::to_string(major_version) + "." + std::to_string(minor_version) + "." + std::to_string(patch_version) + version_type;
 
     // Autopilot string
-    ROS_INFO("Mission [%d]: Connected to %s version %s. Type: %s.", robot_id_,
+    ROS_INFO("Mission lib [%d]: Connected to %s version %s. Type: %s.", robot_id_,
     mavros::utils::to_string((mavlink::minimal::MAV_AUTOPILOT) vehicle_info_srv.response.vehicles[0].autopilot).c_str(),
     autopilot_version.c_str(), mavros::utils::to_string((mavlink::minimal::MAV_TYPE) vehicle_info_srv.response.vehicles[0].type).c_str());
 }
@@ -600,33 +606,27 @@ bool Mission::push() {
     mavros_msgs::WaypointPush push_waypoint_service;
     push_waypoint_service.request.start_index = 0;
     push_waypoint_service.request.waypoints = mission_waypointlist_.waypoints;
-    ROS_INFO("Trying to push mission");
+    ROS_INFO("Mission lib [%d]: Trying to push mission", robot_id_);
 
     if (!push_mission_client_.call(push_waypoint_service)) {
-        ROS_ERROR("Error in push mission service calling!");
+        ROS_ERROR("Mission lib [%d]: Error in push mission service calling!", robot_id_);
         return false;
     }
     std::this_thread::sleep_for(std::chrono::milliseconds(300));
 #ifdef MAVROS_VERSION_BELOW_0_20_0
-    ROS_INFO("Push mission response.success = %s", set_param_service.response.success ? "true" : "false");
+    ROS_INFO("Mission lib [%d]: Push mission response.success = %s", robot_id_, set_param_service.response.success ? "true" : "false");
 #else
     // ROS_INFO("Set param [%s] response.success = %s", _param_id.c_str(), \
     //     set_param_service.response.mode_sent ? "true" : "false");
 #endif
 
-    ROS_INFO("Push mission ended.");
+    ROS_INFO("Mission lib [%d]: Push mission ended.", robot_id_);
 
     return push_waypoint_service.response.success;
 }
 
 
 bool Mission::pushClear() {
-    // The following check was removed when this library became unaware of the state, so now PX4 will be the one complaining when unable to puxhClear.
-    // // Check required state
-    // if ((state().state != fixed_wing_lib::State::LANDED_DISARMED) && (state().state != fixed_wing_lib::State::LANDED_ARMED)) {
-    //     ROS_ERROR("Unable to pushClear: not LANDED_*!");
-    // }
-
     mavros_msgs::WaypointClear clear_mission_service;
 
     if (!clear_mission_client_.call(clear_mission_service)) {
@@ -635,12 +635,12 @@ bool Mission::pushClear() {
     }
     std::this_thread::sleep_for(std::chrono::milliseconds(300));
 #ifdef MAVROS_VERSION_BELOW_0_20_0
-    ROS_INFO("Clear mission response.success = %s", clear_mission_service.response.success ? "true" : "false");
+    ROS_INFO("Mission lib [%d]: Clear mission response.success = %s", robot_id_, clear_mission_service.response.success ? "true" : "false");
 #else
     // ROS_INFO("Set param [%s] response.success = %s", _param_id.c_str(), \
     //     set_param_service.response.mode_sent ? "true" : "false");
 #endif
-    ROS_INFO("Trying to clear mission");
+    ROS_INFO("Mission lib [%d]: Trying to clear mission", robot_id_);
 
     return true;
 }
@@ -648,9 +648,9 @@ bool Mission::pushClear() {
 
 void Mission::start() {
     if (uav_has_empty_mission_) {
-        ROS_ERROR("Mission start() called but the UAV doesn't have a mission. Ignoring the start() call.");
+        ROS_ERROR("Mission lib [%d]: start() called but the UAV doesn't have a mission. Ignoring the start() call.", robot_id_);
     } else if (active_waypoint_ != -1) {
-        ROS_ERROR("Mission start() called but the UAV is already doing a mission. Ignoring the start() call.");
+        ROS_ERROR("Mission lib [%d]: start() called but the UAV is already doing a mission. Ignoring the start() call.", robot_id_);
     } else {
         setFlightMode("AUTO.MISSION");
         arm(false); 
@@ -681,7 +681,7 @@ void Mission::addTakeOffWp(const geometry_msgs::PoseStamped& _takeoff_pose, floa
     std::vector<geographic_msgs::GeoPoseStamped> usf;   // Stands for Uniformized Spatial Field
     usf = uniformizeSpatialField(takeoff_pose_vector);
 
-    if (usf.size() != 1) { ROS_ERROR("Error in [%d]-th waypoint set, posestamped list lenght is not 1!", (int) mission_waypointlist_.waypoints.size()); } //TODO(JoseAndres): Update errors
+    if (usf.size() != 1) { ROS_ERROR("Mission lib [%d]: Error in [%d]-th waypoint set, posestamped list lenght is not 1!", robot_id_, (int) mission_waypointlist_.waypoints.size()); } //TODO(JoseAndres): Update errors
 
     yaw_angle = getYaw(usf[0].pose.orientation);
 
@@ -709,7 +709,7 @@ void Mission::addPassWpList(const std::vector<geometry_msgs::PoseStamped>& _pass
     std::vector<geographic_msgs::GeoPoseStamped> usf;
     usf = uniformizeSpatialField(_pass_poses);
 
-    if (usf.size() == 0) { ROS_ERROR("Error in [%d]-th waypoint set, posestamped list is empty!", (int) mission_waypointlist_.waypoints.size()); }
+    if (usf.size() == 0) { ROS_ERROR("Mission lib [%d]: Error in [%d]-th waypoint set, posestamped list is empty!", robot_id_, (int) mission_waypointlist_.waypoints.size()); }
 
     if (_speed!=-1) {
         addSpeedWp(_speed);
@@ -738,7 +738,7 @@ void Mission::addLoiterWpList(const std::vector<geometry_msgs::PoseStamped>& _lo
     std::vector<geographic_msgs::GeoPoseStamped> usf;
     usf = uniformizeSpatialField(_loiter_poses);
 
-    if (usf.size() == 0) { ROS_ERROR("Error in [%d]-th waypoint set, posestamped list is empty!", (int) mission_waypointlist_.waypoints.size()); }
+    if (usf.size() == 0) { ROS_ERROR("Mission lib [%d]: Error in [%d]-th waypoint set, posestamped list is empty!", robot_id_, (int) mission_waypointlist_.waypoints.size()); }
 
     if (_speed!=-1) {
         addSpeedWp(_speed);
@@ -812,7 +812,7 @@ void Mission::addLoiterWpList(const std::vector<geometry_msgs::PoseStamped>& _lo
 void Mission::addLandWp(const geometry_msgs::PoseStamped& _land_pose, float _abort_alt, float _precision_mode) {
 
     if (airframe_type_==AirframeType::FIXED_WING) {
-        ROS_ERROR("Error in [%d]-th waypoint, _loiter_to_alt_start_landing_pose missing in Mission::addLandWp for airframe type fixed wing.", (int) mission_waypointlist_.waypoints.size());
+        ROS_ERROR("Mission lib [%d]: Error in [%d]-th waypoint, _loiter_to_alt_start_landing_pose missing in Mission::addLandWp for airframe type fixed wing.", robot_id_, (int) mission_waypointlist_.waypoints.size());
         exit(EXIT_FAILURE);
     }
 
@@ -822,7 +822,7 @@ void Mission::addLandWp(const geometry_msgs::PoseStamped& _land_pose, float _abo
     std::vector<geographic_msgs::GeoPoseStamped> usf;   // Stands for Uniformized Spatial Field
     usf = uniformizeSpatialField(land_pose_vector);
 
-    if (usf.size() != 1) { ROS_ERROR("Error in [%d]-th waypoint set, posestamped list lenght is not 1!", (int) mission_waypointlist_.waypoints.size()); } //TODO(JoseAndres): Update errors
+    if (usf.size() != 1) { ROS_ERROR("Mission lib [%d]: Error in [%d]-th waypoint set, posestamped list lenght is not 1!", robot_id_, (int) mission_waypointlist_.waypoints.size()); } //TODO(JoseAndres): Update errors
 
     mavros_msgs::Waypoint wp;
     wp = geoPoseStampedtoGlobalWaypoint(usf.back());
@@ -841,7 +841,7 @@ void Mission::addLandWp(const geometry_msgs::PoseStamped& _land_pose, float _abo
 void Mission::addLandWp(const geometry_msgs::PoseStamped& _loiter_to_alt_start_landing_pose, const geometry_msgs::PoseStamped& _land_pose, float _loit_radius, float _loit_heading, float _loit_forward_moving, float _abort_alt, float _precision_mode) {
 
     if (airframe_type_==AirframeType::MULTICOPTER || airframe_type_==AirframeType::VTOL) {
-        ROS_ERROR("Error in [%d]-th waypoint, _loiter_to_alt_start_landing_pose included in Mission::addLandWp when not needed if your airframe is not a fixed wing. Please review your plan.", (int) mission_waypointlist_.waypoints.size());
+        ROS_ERROR("Mission lib [%d]: Error in [%d]-th waypoint, _loiter_to_alt_start_landing_pose included in Mission::addLandWp when not needed if your airframe is not a fixed wing. Please review your plan.", robot_id_, (int) mission_waypointlist_.waypoints.size());
         exit(EXIT_FAILURE);
     }
 
@@ -862,7 +862,7 @@ void Mission::addLandWp(const geometry_msgs::PoseStamped& _loiter_to_alt_start_l
 
     mavros_msgs::Waypoint wp2;
 
-    if (usf.size() != 2) { ROS_ERROR("Error in [%d]-th waypoint, posestamped list length is not 2!", (int) mission_waypointlist_.waypoints.size()); }
+    if (usf.size() != 2) { ROS_ERROR("Mission lib [%d]: Error in [%d]-th waypoint, posestamped list length is not 2!", robot_id_, (int) mission_waypointlist_.waypoints.size()); }
 
     wp2 = geoPoseStampedtoGlobalWaypoint(usf[0]);
 
@@ -965,7 +965,7 @@ std::vector<geographic_msgs::GeoPoseStamped> Mission::uniformizeSpatialField( co
                     transformToHomeFrame = tf_buffer_.lookupTransform(uav_home_frame_id_, waypoint_frame_id, ros::Time(0), ros::Duration(1.0));
                     cached_transforms_[waypoint_frame_id] = transformToHomeFrame; // Save transform in cache
                 } catch (tf2::TransformException &ex) {
-                    ROS_ERROR("Transformation not found");
+                    ROS_ERROR("Mission lib [%d]: Transformation not found", robot_id_);
                     success = false;
                 }
             } else {

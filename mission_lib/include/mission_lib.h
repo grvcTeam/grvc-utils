@@ -161,6 +161,7 @@ private:
 
     bool mavros_has_geo_pose_   = false;
     bool uav_has_empty_mission_ = true;
+    bool low_battery_warning_;
     bool id_is_unique_;
 };
 
