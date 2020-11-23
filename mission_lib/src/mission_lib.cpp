@@ -195,11 +195,12 @@ void Mission::constructorFunction() {
                 low_battery_warning_ = false;
             } else {
                 active_waypoint_ = _msg->current_seq;
-                if (!low_battery_warning_ && active_waypoint_>0 && _msg->waypoints[active_waypoint_].command==21) {
-                    low_battery_warning_ = true;
-                    system("file_path_returned_by_command=$(find ~ -name 'low_battery_warning.py' 2>/dev/null); $file_path_returned_by_command &");
-                    ROS_INFO("Mission_lib [%d]: Low battery warning dialog.", robot_id_);
-                }
+                // if (!low_battery_warning_ && active_waypoint_>0 && _msg->waypoints[active_waypoint_].command==21) {  // TODO: not really checking the battery (for the experiments).
+                //     low_battery_warning_ = true;
+                //     std::string bash_commands_to_run_python_script = "file_path_returned_by_command=$(find ~ -name 'low_battery_warning.py' 2>/dev/null); $file_path_returned_by_command "+std::to_string(robot_id_)+" &";
+                //     system(bash_commands_to_run_python_script.c_str());
+                //     ROS_WARN("Mission_lib [%d]: Low battery warning dialog.", robot_id_);
+                // }
             }
     });
     drone_telemetry_sub_ = nh.subscribe<sensor_msgs::BatteryState>(drone_telemetry_topic.c_str(), 1, \
