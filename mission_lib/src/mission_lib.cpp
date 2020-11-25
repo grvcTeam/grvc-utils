@@ -94,7 +94,7 @@ void Mission::constructorFunction() {
     // Parse arguments
     ros::NodeHandle pnh("~");
     if (robot_id_==-1)      ros::param::get("~uav_id",robot_id_);
-    if (pose_frame_id_=="") pnh.param<std::string>("pose_frame_id", pose_frame_id_, "");
+    if (pose_frame_id_=="") pnh.param<std::string>("pose_frame_id", pose_frame_id_, "map");
 
     // Assure id uniqueness
     id_is_unique_ = true;
@@ -370,80 +370,61 @@ void Mission::initHomeFrame() {
 
     local_start_pos_ << 0.0, 0.0, 0.0;
 
-    // Get frame prefix from namespace
-    std::string ns;
-    if (ros::this_node::getNamespace() == "/") {
-        std::string ns_uav_prefix;
-        ros::param::get("~ns_uav_prefix",ns_uav_prefix);
-        ns = "/" + ns_uav_prefix + std::to_string(robot_id_);
-    }
-    uav_frame_id_ = ns + "/base_link";
-    uav_home_frame_id_ = ns + "/odom";
-    while (uav_frame_id_[0]=='/') {
-        uav_frame_id_.erase(0,1);
-    }
+    uav_home_frame_id_ = node_name_space_ + "odom";
     while (uav_home_frame_id_[0]=='/') {
         uav_home_frame_id_.erase(0,1);
     }
-    std::string parent_frame;
-    ros::param::param<std::string>("~home_pose_parent_frame", parent_frame, "map");
 
-    std::vector<double> home_pose(3, 0.0);
-    if (ros::param::has("~home_pose")) {
-        ros::param::get("~home_pose",home_pose);
-    } else if (ros::param::has("~map_origin_geo")) {
-        ROS_WARN("Mission lib [%d]: Be careful, you should only use this mode with RTK GPS!", robot_id_);
+    std::string home_pose_parent_frame;
+    ros::param::param<std::string>("~home_pose_parent_frame", home_pose_parent_frame, "map");
+
+    if (ros::param::has("~map_origin_geo")) {
         while (!mavros_has_geo_pose_) {
             std::this_thread::sleep_for(std::chrono::milliseconds(200));
         }
-        std::vector<double> map_origin_geo(3, 0.0);
+
+        std::vector<double> map_origin_geo;
         ros::param::get("~map_origin_geo",map_origin_geo);
-        geographic_msgs::GeoPoint origin_geo, actual_coordinate_geo;
-        origin_geo.latitude = map_origin_geo[0];
-        origin_geo.longitude = map_origin_geo[1];
-        origin_geo.altitude = 0; //map_origin_geo[2];
-        actual_coordinate_geo.latitude = cur_geo_pose_.latitude;
-        actual_coordinate_geo.longitude = cur_geo_pose_.longitude;
-        actual_coordinate_geo.altitude = 0; //cur_geo_pose_.altitude;
         if(map_origin_geo[0]==0 && map_origin_geo[1]==0) {
             ROS_WARN("Mission lib [%d]: Map origin is set to 0. Define map_origin_geo param by a vector in format [lat,lon,alt].", robot_id_);
         }
-        geometry_msgs::Point32 map_origin_cartesian = geographic_to_cartesian (actual_coordinate_geo, origin_geo);
-
-        home_pose[0] = map_origin_cartesian.x;
-        home_pose[1] = map_origin_cartesian.y;
-        home_pose[2] = map_origin_cartesian.z;
-    } else {
-        ROS_WARN("Mission lib [%d]: No home pose or map origin was defined. Home frame will be equal to map.", robot_id_);
-    }
-
-    if (ros::param::has("~map_origin_geo")) {
-
-        std::vector<double> map_origin_geo(0.0, 0.0);
-        ros::param::get("~map_origin_geo",map_origin_geo);
         origin_geo_.latitude = map_origin_geo[0];
         origin_geo_.longitude = map_origin_geo[1];
-        origin_geo_.altitude = 0;                           //map_origin_geo[2];
+        origin_geo_.altitude = 0; // map_origin_geo[2];                 // TODO X
 
+        geographic_msgs::GeoPoint actual_coordinate_geo;
+        actual_coordinate_geo.latitude = cur_geo_pose_.latitude;
+        actual_coordinate_geo.longitude = cur_geo_pose_.longitude;
+        actual_coordinate_geo.altitude = 0; // cur_geo_pose_.altitude;  // TODO X
+
+        // TODO X: Right now the map origin is considered to be always at z=0, which makes sense, and all the MAVROS waypoints will be done just fine.
+        // But the initial pose of the UAV (the one where mission_lib is constructed) is considered to be also at z=0, which may not be always correct.
+        // The only consecuence of this is that pose() will give an output with an offset in z if the initial z of the drone isn't 0 meters.
+        // You can solve this issue by uncommenting the two "TODO X" above, but you will have to tune both map_origin_geo[2] and cur_geo_pose_.altitude so that are correct...
+        // Or else you can find your drone doing a takeoff of, let's say, 444 meters!
+
+        map_origin_cartesian_ = geographic_to_cartesian (actual_coordinate_geo, origin_geo_);
+    } else {
+        ROS_WARN("Mission lib [%d]: No home pose or map origin was defined. Home frame will be equal to map.", robot_id_);
     }
 
     geometry_msgs::TransformStamped static_transformStamped;
 
     static_transformStamped.header.stamp = ros::Time::now();
-    static_transformStamped.header.frame_id = parent_frame;
+    static_transformStamped.header.frame_id = home_pose_parent_frame;
     static_transformStamped.child_frame_id = uav_home_frame_id_;
-    static_transformStamped.transform.translation.x = home_pose[0];
-    static_transformStamped.transform.translation.y = home_pose[1];
-    static_transformStamped.transform.translation.z = home_pose[2];
+    static_transformStamped.transform.translation.x = map_origin_cartesian_.x;
+    static_transformStamped.transform.translation.y = map_origin_cartesian_.y;
+    static_transformStamped.transform.translation.z = map_origin_cartesian_.z;
     static_transformStamped.transform.rotation.x = 0;
     static_transformStamped.transform.rotation.y = 0;
     static_transformStamped.transform.rotation.z = 0;
     static_transformStamped.transform.rotation.w = 1;
 
-    if(parent_frame != "map" && parent_frame != "") {
+    if(home_pose_parent_frame != "map" && home_pose_parent_frame != "") {
         geometry_msgs::TransformStamped transform_to_map;
         try {
-            transform_to_map = tf_buffer_.lookupTransform(parent_frame, "map", ros::Time(0), ros::Duration(2.0));
+            transform_to_map = tf_buffer_.lookupTransform(home_pose_parent_frame, "map", ros::Time(0), ros::Duration(2.0));
             static_transformStamped.transform.rotation = transform_to_map.transform.rotation;
         } catch (tf2::TransformException &ex) {
             ROS_WARN("Mission lib [%d]: In initHomeFrame, %s. Publishing static TF in ENU.", robot_id_, ex.what());
@@ -682,11 +663,11 @@ void Mission::addTakeOffWp(const geometry_msgs::PoseStamped& _takeoff_pose, floa
     std::vector<geographic_msgs::GeoPoseStamped> usf;   // Stands for Uniformized Spatial Field
     usf = uniformizeSpatialField(takeoff_pose_vector);
 
-    if (usf.size() != 1) { ROS_ERROR("Mission lib [%d]: Error in [%d]-th waypoint set, posestamped list lenght is not 1!", robot_id_, (int) mission_waypointlist_.waypoints.size()); } //TODO(JoseAndres): Update errors
+    if (usf.size() != 1) { ROS_ERROR("Mission lib [%d]: Error in [%d]-th waypoint set, posestamped list lenght is not 1!", robot_id_, (int) mission_waypointlist_.waypoints.size()); }
 
     yaw_angle = getYaw(usf[0].pose.orientation);
 
-    wp = geoPoseStampedtoGlobalWaypoint(usf[0]);
+    wp = geoPoseStampedtoMavrosWaypoint(usf[0]);
 
     wp.frame = 3;           // FRAME_GLOBAL_REL_ALT
 
@@ -718,7 +699,7 @@ void Mission::addPassWpList(const std::vector<geometry_msgs::PoseStamped>& _pass
 
     for (const auto& geoposestamped : usf ) {
 
-        mavros_msgs::Waypoint wp = geoPoseStampedtoGlobalWaypoint(geoposestamped);
+        mavros_msgs::Waypoint wp = geoPoseStampedtoMavrosWaypoint(geoposestamped);
         wp.frame = 3;           // FRAME_GLOBAL_REL_ALT
         wp.command = 16;        // MAV_CMD_NAV_WAYPOINT
         wp.is_current = false;
@@ -748,7 +729,7 @@ void Mission::addLoiterWpList(const std::vector<geometry_msgs::PoseStamped>& _lo
     for (const auto& geoposestamped : usf ) {
 
         mavros_msgs::Waypoint wp;
-        wp = geoPoseStampedtoGlobalWaypoint( geoposestamped);
+        wp = geoPoseStampedtoMavrosWaypoint( geoposestamped);
         wp.frame = 3;           // FRAME_GLOBAL_REL_ALT
         wp.is_current = false;
         wp.autocontinue = true;
@@ -823,10 +804,10 @@ void Mission::addLandWp(const geometry_msgs::PoseStamped& _land_pose, float _abo
     std::vector<geographic_msgs::GeoPoseStamped> usf;   // Stands for Uniformized Spatial Field
     usf = uniformizeSpatialField(land_pose_vector);
 
-    if (usf.size() != 1) { ROS_ERROR("Mission lib [%d]: Error in [%d]-th waypoint set, posestamped list lenght is not 1!", robot_id_, (int) mission_waypointlist_.waypoints.size()); } //TODO(JoseAndres): Update errors
+    if (usf.size() != 1) { ROS_ERROR("Mission lib [%d]: Error in [%d]-th waypoint set, posestamped list lenght is not 1!", robot_id_, (int) mission_waypointlist_.waypoints.size()); }
 
     mavros_msgs::Waypoint wp;
-    wp = geoPoseStampedtoGlobalWaypoint(usf.back());
+    wp = geoPoseStampedtoMavrosWaypoint(usf.back());
     wp.frame = 3;              // FRAME_GLOBAL_REL_ALT
     wp.command = 21;           // MAV_CMD_NAV_LAND
     wp.is_current = false;
@@ -865,7 +846,7 @@ void Mission::addLandWp(const geometry_msgs::PoseStamped& _loiter_to_alt_start_l
 
     if (usf.size() != 2) { ROS_ERROR("Mission lib [%d]: Error in [%d]-th waypoint, posestamped list length is not 2!", robot_id_, (int) mission_waypointlist_.waypoints.size()); }
 
-    wp2 = geoPoseStampedtoGlobalWaypoint(usf[0]);
+    wp2 = geoPoseStampedtoMavrosWaypoint(usf[0]);
 
     wp2.frame = 3;              // FRAME_GLOBAL_REL_ALT
     wp2.command = 31;           // MAV_CMD_NAV_LOITER_TO_ALT
@@ -878,7 +859,7 @@ void Mission::addLandWp(const geometry_msgs::PoseStamped& _loiter_to_alt_start_l
     mission_waypointlist_.waypoints.push_back(wp2);
 
     mavros_msgs::Waypoint wp3;
-    wp3 = geoPoseStampedtoGlobalWaypoint(usf.back());
+    wp3 = geoPoseStampedtoMavrosWaypoint(usf.back());
     wp3.frame = 3;              // FRAME_GLOBAL_REL_ALT
     wp3.command = 21;           // MAV_CMD_NAV_LAND
     wp3.is_current = false;
@@ -949,9 +930,9 @@ std::vector<geographic_msgs::GeoPoseStamped> Mission::uniformizeSpatialField( co
             // No transform is needed and already in global coordinates
             homogen_world_pos.header = posestamped.header;
             homogen_world_pos.pose.orientation = posestamped.pose.orientation;
-            homogen_world_pos.pose.position.latitude = posestamped.pose.position.x;
+            homogen_world_pos.pose.position.latitude  = posestamped.pose.position.x;
             homogen_world_pos.pose.position.longitude = posestamped.pose.position.y;
-            homogen_world_pos.pose.position.altitude = posestamped.pose.position.z;
+            homogen_world_pos.pose.position.altitude  = posestamped.pose.position.z;
         } else if ( waypoint_frame_id == "" || waypoint_frame_id == uav_home_frame_id_ ) {
 // TODO (Ángel): THIS WAS AN if, BUT SHOULD BE AN else if LIKE THIS, RIGHT? CHECK. Maybe this solves the other TODO "Check this and solve frames issue".
             // No transform is needed. Passed to global
@@ -978,7 +959,7 @@ std::vector<geographic_msgs::GeoPoseStamped> Mission::uniformizeSpatialField( co
             homogen_world_pos = poseStampedtoGeoPoseStamped(aux);
         }
 
-        uniformized.push_back( homogen_world_pos);
+        uniformized.push_back(homogen_world_pos);
 
     }
 
@@ -988,50 +969,50 @@ std::vector<geographic_msgs::GeoPoseStamped> Mission::uniformizeSpatialField( co
 
 geographic_msgs::GeoPoseStamped Mission::poseStampedtoGeoPoseStamped(const geometry_msgs::PoseStamped& _posestamped ) {
 
-    geometry_msgs::Point32 geo_point;
-    geo_point.x = _posestamped.pose.position.x;
-    geo_point.y = _posestamped.pose.position.y;
-    geo_point.z = _posestamped.pose.position.z;
+    geometry_msgs::Point32 aux_point32;
+    aux_point32.x = _posestamped.pose.position.x;
+    aux_point32.y = _posestamped.pose.position.y;
+    aux_point32.z = _posestamped.pose.position.z;
 
-    geographic_msgs::GeoPoint actual_geo = cartesian_to_geographic(geo_point, origin_geo_);
+    geographic_msgs::GeoPoint actual_geopoint = cartesian_to_geographic(aux_point32, origin_geo_);
 
-    geographic_msgs::GeoPoseStamped geopose;
-    geopose.pose.position.latitude = actual_geo.latitude;
-    geopose.pose.position.longitude = actual_geo.longitude;
-    geopose.pose.position.altitude = actual_geo.altitude;
-    geopose.header = _posestamped.header;
-    geopose.pose.orientation = _posestamped.pose.orientation;
+    geographic_msgs::GeoPoseStamped geopose_to_return;
+    geopose_to_return.header                  = _posestamped.header;
+    geopose_to_return.pose.position.latitude  = actual_geopoint.latitude;
+    geopose_to_return.pose.position.longitude = actual_geopoint.longitude;
+    geopose_to_return.pose.position.altitude  = actual_geopoint.altitude;
+    geopose_to_return.pose.orientation        = _posestamped.pose.orientation;
 
-    return geopose;
+    return geopose_to_return;
 }
 
 
 geometry_msgs::PoseStamped Mission::geoPoseStampedtoPoseStamped(const geographic_msgs::GeoPoseStamped _geoposestamped ) {
 
-    geographic_msgs::GeoPoint aux;
-    aux.latitude = _geoposestamped.pose.position.latitude;
-    aux.longitude = _geoposestamped.pose.position.longitude;
-    aux.altitude = _geoposestamped.pose.position.altitude;
+    geographic_msgs::GeoPoint aux_geopoint;
+    aux_geopoint.latitude  = _geoposestamped.pose.position.latitude;
+    aux_geopoint.longitude = _geoposestamped.pose.position.longitude;
+    aux_geopoint.altitude  = _geoposestamped.pose.position.altitude;
 
-    geometry_msgs::Point32 actual_geo = geographic_to_cartesian(aux, origin_geo_);
+    geometry_msgs::Point32 actual_point32 = geographic_to_cartesian(aux_geopoint, origin_geo_);
 
-    geometry_msgs::PoseStamped posestamped;
-    posestamped.pose.position.x = actual_geo.x;
-    posestamped.pose.position.y = actual_geo.y;
-    posestamped.pose.position.z = actual_geo.z;
-    posestamped.header = _geoposestamped.header;
-    posestamped.pose.orientation = _geoposestamped.pose.orientation;
+    geometry_msgs::PoseStamped posestamped_to_return;
+    posestamped_to_return.header           = _geoposestamped.header;
+    posestamped_to_return.pose.position.x  = actual_point32.x;
+    posestamped_to_return.pose.position.y  = actual_point32.y;
+    posestamped_to_return.pose.position.z  = actual_point32.z;
+    posestamped_to_return.pose.orientation = _geoposestamped.pose.orientation;
 
-    return posestamped;
+    return posestamped_to_return;
 }
 
 
-mavros_msgs::Waypoint Mission::geoPoseStampedtoGlobalWaypoint(const geographic_msgs::GeoPoseStamped& _geoposestamped ) {
+mavros_msgs::Waypoint Mission::geoPoseStampedtoMavrosWaypoint(const geographic_msgs::GeoPoseStamped& _geoposestamped ) {
 
     mavros_msgs::Waypoint waypoint;
-    waypoint.x_lat = _geoposestamped.pose.position.latitude;
+    waypoint.x_lat  = _geoposestamped.pose.position.latitude;
     waypoint.y_long = _geoposestamped.pose.position.longitude;
-    waypoint.z_alt = _geoposestamped.pose.position.altitude;
+    waypoint.z_alt  = _geoposestamped.pose.position.altitude;
 
     return waypoint;
 }

@@ -38,6 +38,7 @@
 #include <geographic_msgs/GeoPoseStamped.h>
 #include <sensor_msgs/NavSatFix.h>
 #include <geometry_msgs/PoseStamped.h>
+#include <geometry_msgs/Point32.h>
 #include <geometry_msgs/TwistStamped.h>
 #include <geometry_msgs/TransformStamped.h>
 
@@ -82,8 +83,11 @@ public:
     // Getter for the uav identifier (may be redundant, but useful for debug):
     int id() const { return robot_id_; };
 
-    // Set home position:
+    // Set home or launch site at (0,0,0) in the pose() output:
     bool setHome(bool _set_z);
+
+    // IMPORTANT: Right now the map origin is considered to be always at z=0, which makes sense, and all the MAVROS waypoints will be done just fine. But the initial pose of the UAV (the one where mission_lib is constructed) is considered to be also at z=0, which may not be always correct.
+    // The only consecuence of this is that pose() will give an output with an offset in z if the initial z of the drone isn't 0 meters. You can solve this issue by uncommenting the "TODO X" in "mission_lib.cpp", but you will have to tune both map_origin_geo[2] and cur_geo_pose_.altitude so that are correct.
 
     // Functions to build, delete, print, push, start and stop the mission:
     void addTakeOffWp(const geometry_msgs::PoseStamped& _takeoff_pose, float _minimum_pitch=15);    // For FIXED_WING try that the pose is far enough straight to the direction of the plane. For VTOL and MULTICOPTER any point is valid.
@@ -113,7 +117,7 @@ private:
     std::vector<geographic_msgs::GeoPoseStamped> uniformizeSpatialField(const std::vector<geometry_msgs::PoseStamped>& _posestamped_list);
     geographic_msgs::GeoPoseStamped poseStampedtoGeoPoseStamped(const geometry_msgs::PoseStamped& _posestamped );
     geometry_msgs::PoseStamped geoPoseStampedtoPoseStamped(const geographic_msgs::GeoPoseStamped _geoposestamped );
-    mavros_msgs::Waypoint geoPoseStampedtoGlobalWaypoint(const geographic_msgs::GeoPoseStamped& _geoposestamped );
+    mavros_msgs::Waypoint geoPoseStampedtoMavrosWaypoint(const geographic_msgs::GeoPoseStamped& _geoposestamped );
     float getYaw(const geometry_msgs::Quaternion& _quat);
 
     // Atrributes used for the getters:
@@ -146,8 +150,8 @@ private:
 
     std::string     pose_frame_id_;
     std::string     uav_home_frame_id_;
-    std::string     uav_frame_id_;
     Eigen::Vector3d local_start_pos_;
+    geometry_msgs::Point32    map_origin_cartesian_;
     geographic_msgs::GeoPoint origin_geo_;
 
     tf2_ros::Buffer                                        tf_buffer_;

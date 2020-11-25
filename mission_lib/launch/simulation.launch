@@ -20,7 +20,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
     <!-- <arg name="robot_model" default="mbzirc"/> -->
     <!-- <arg name="robot_model" default="standard_vtol"/> -->
 
-    <arg name="pose_frame_id" default=""/> <!-- To return pose in other frame than local, e.g. map -->
+    <arg name="pose_frame_id" default="map"/> <!-- To return pose() in other frame than local, e.g. map -->
 
     <group if="$(eval mode=='sitl')">
         <!-- Launch Gazebo simulation -->
@@ -52,7 +52,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
         <param name="uav_id" value="1"/>
         <param name="pose_frame_id" value="$(arg pose_frame_id)"/>
         <param name="home_pose_parent_frame" value="map"/>
-        <rosparam param="home_pose">[0, 0, 0]</rosparam>
         <rosparam param="map_origin_geo">[37.558542, -5.931074, 7.89]</rosparam>
     </node>
 
