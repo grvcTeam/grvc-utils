@@ -378,13 +378,17 @@ void Mission::initHomeFrame() {
     std::string home_pose_parent_frame;
     ros::param::param<std::string>("~home_pose_parent_frame", home_pose_parent_frame, "map");
 
-    if (ros::param::has("~map_origin_geo")) {
+    if (ros::param::has("~map_origin_geo") || ros::param::has("map_origin_geo")) {
         while (!mavros_has_geo_pose_) {
             std::this_thread::sleep_for(std::chrono::milliseconds(200));
         }
 
         std::vector<double> map_origin_geo;
-        ros::param::get("~map_origin_geo",map_origin_geo);
+        if (ros::param::has("~map_origin_geo")) {
+            ros::param::get("~map_origin_geo",map_origin_geo);
+        } else {
+            ros::param::get("map_origin_geo",map_origin_geo);
+        }
         if(map_origin_geo[0]==0 && map_origin_geo[1]==0) {
             ROS_WARN("Mission lib [%d]: Map origin is set to 0. Define map_origin_geo param by a vector in format [lat,lon,alt].", robot_id_);
         }
