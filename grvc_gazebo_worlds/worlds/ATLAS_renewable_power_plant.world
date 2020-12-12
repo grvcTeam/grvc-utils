@@ -36,7 +36,7 @@
     <!-- Include human target -->
     <include>
       <uri>model://target</uri>
-      <pose>-27 84 0 0 0 1.41</pose>
+      <pose>-29.1 77.8 0 0 0 0.17</pose>
       <name>target</name>
     </include>
 
@@ -49,7 +49,7 @@
 
     <gui>
       <camera name="user_camera">
-        <pose>19.9 38.6 25.6 0 0.3 2.16</pose>
+        <pose>21.7 40 26 0 0.3 2.16</pose>
         <clip>
           <near>0.001</near>
           <far>10000</far>
@@ -61,25 +61,25 @@
     <!-- Include wind turbine (static base) -->
     <include>
       <uri>model://spinning_wind_turbine_base</uri>
-      <pose>-20 90 0 0 0 0</pose>
+      <pose>-20 85 0 0 0 0</pose>
       <name>spinning_wind_turbine_base_1</name>
     </include>
 
     <include>
       <uri>model://spinning_wind_turbine_base</uri>
-      <pose>-30 105 0 0 0 0</pose>
+      <pose>-40 105 0 0 0 0</pose>
       <name>spinning_wind_turbine_base_2</name>
     </include>
 
     <include>
       <uri>model://spinning_wind_turbine_base</uri>
-      <pose>-20 120 0 0 0 0</pose>
+      <pose>-20 125 0 0 0 0</pose>
       <name>spinning_wind_turbine_base_3</name>
     </include>
 
     <include>
       <uri>model://spinning_wind_turbine_base</uri>
-      <pose>-10 105 0 0 0 0</pose>
+      <pose>0 105 0 0 0 0</pose>
       <name>spinning_wind_turbine_base_4</name>
     </include>
 
@@ -97,23 +97,23 @@
         <trajectory id="0" type="spin">
             <waypoint>
               <time>0.0</time>
-              <pose>-20 90 21.6127 0 0 0</pose>
+              <pose>-20 85 21.6127 0 0 0</pose>
             </waypoint>
             <waypoint>
               <time>1.0</time>
-              <pose>-20 90 21.6127 0 1.570796327 0</pose>
+              <pose>-20 85 21.6127 0 1.570796327 0</pose>
             </waypoint>
             <waypoint>
               <time>2.0</time>
-              <pose>-20 90 21.6127 0 3.141592654 0</pose>
+              <pose>-20 85 21.6127 0 3.141592654 0</pose>
             </waypoint>
             <waypoint>
               <time>3.0</time>
-              <pose>-20 90 21.6127 0 4.71238898 0</pose>
+              <pose>-20 85 21.6127 0 4.71238898 0</pose>
             </waypoint>
             <waypoint>
               <time>4.0</time>
-              <pose>-20 90 21.6127 0 6.2832 0</pose>
+              <pose>-20 85 21.6127 0 6.2832 0</pose>
             </waypoint>
         </trajectory>
       </script> 
@@ -131,23 +131,23 @@
         <trajectory id="0" type="spin">
             <waypoint>
               <time>0.0</time>
-              <pose>-30 105 21.6127 0 0 0</pose>
+              <pose>-40 105 21.6127 0 0 0</pose>
             </waypoint>
             <waypoint>
               <time>1.0</time>
-              <pose>-30 105 21.6127 0 1.570796327 0</pose>
+              <pose>-40 105 21.6127 0 1.570796327 0</pose>
             </waypoint>
             <waypoint>
               <time>2.0</time>
-              <pose>-30 105 21.6127 0 3.141592654 0</pose>
+              <pose>-40 105 21.6127 0 3.141592654 0</pose>
             </waypoint>
             <waypoint>
               <time>3.0</time>
-              <pose>-30 105 21.6127 0 4.71238898 0</pose>
+              <pose>-40 105 21.6127 0 4.71238898 0</pose>
             </waypoint>
             <waypoint>
               <time>4.0</time>
-              <pose>-30 105 21.6127 0 6.2832 0</pose>
+              <pose>-40 105 21.6127 0 6.2832 0</pose>
             </waypoint>
         </trajectory>
       </script> 
@@ -165,23 +165,23 @@
         <trajectory id="0" type="spin">
             <waypoint>
               <time>0.0</time>
-              <pose>-20 120 21.6127 0 0 0</pose>
+              <pose>-20 125 21.6127 0 0 0</pose>
             </waypoint>
             <waypoint>
               <time>1.0</time>
-              <pose>-20 120 21.6127 0 1.570796327 0</pose>
+              <pose>-20 125 21.6127 0 1.570796327 0</pose>
             </waypoint>
             <waypoint>
               <time>2.0</time>
-              <pose>-20 120 21.6127 0 3.141592654 0</pose>
+              <pose>-20 125 21.6127 0 3.141592654 0</pose>
             </waypoint>
             <waypoint>
               <time>3.0</time>
-              <pose>-20 120 21.6127 0 4.71238898 0</pose>
+              <pose>-20 125 21.6127 0 4.71238898 0</pose>
             </waypoint>
             <waypoint>
               <time>4.0</time>
-              <pose>-20 120 21.6127 0 6.2832 0</pose>
+              <pose>-20 125 21.6127 0 6.2832 0</pose>
             </waypoint>
         </trajectory>
       </script> 
@@ -199,23 +199,23 @@
         <trajectory id="0" type="spin">
             <waypoint>
               <time>0.0</time>
-              <pose>-10 105 21.6127 0 0 0</pose>
+              <pose>0 105 21.6127 0 0 0</pose>
             </waypoint>
             <waypoint>
               <time>1.0</time>
-              <pose>-10 105 21.6127 0 1.570796327 0</pose>
+              <pose>0 105 21.6127 0 1.570796327 0</pose>
             </waypoint>
             <waypoint>
               <time>2.0</time>
-              <pose>-10 105 21.6127 0 3.141592654 0</pose>
+              <pose>0 105 21.6127 0 3.141592654 0</pose>
             </waypoint>
             <waypoint>
               <time>3.0</time>
-              <pose>-10 105 21.6127 0 4.71238898 0</pose>
+              <pose>0 105 21.6127 0 4.71238898 0</pose>
             </waypoint>
             <waypoint>
               <time>4.0</time>
-              <pose>-10 105 21.6127 0 6.2832 0</pose>
+              <pose>0 105 21.6127 0 6.2832 0</pose>
             </waypoint>
         </trajectory>
       </script> 
