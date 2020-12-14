@@ -15,6 +15,19 @@ using namespace std;
 
 void wellcome_msg();
 
+const vector<string> sensor_names = {"Leica", "Cam2", "Cam1"};
+
+std::string map_status(const bool status) {
+    stringstream ss;
+    if(status) {
+        ss << ANSI_COLOR_GREEN << ANSI_BOLD << " ON" << ANSI_COLOR_RESET;
+    }
+    else {
+        ss << ANSI_COLOR_RED << ANSI_BOLD << "OFF" << ANSI_COLOR_RESET;
+    }
+    return ss.str();
+}
+
 
 int main(int argc, char **argv) {
     wellcome_msg();
@@ -67,11 +80,15 @@ int main(int argc, char **argv) {
     ss << "Publishing data to \"" << PUB_VISION_TOPIC_NAME << "\"";
     terminal::INFO(ss.str());
 
+    cout << "---" << endl << "Vision monitor:" << endl;
+
     while(ros::ok()) {
-        msg_t msg_in = {0};
+        udp_msg_t msg_in = {0};
         ssize_t n = recv(sock, &msg_in, sizeof(msg_in), 0);
         
+        bool ekf_status = false;
         if (n > 0) {
+            ekf_status = true;
             geometry_msgs::PoseStamped msg_out;
 
             msg_out.header.stamp    = ros::Time::now();
@@ -89,6 +106,12 @@ int main(int argc, char **argv) {
             pub_vision.publish(msg_out);
         }
 
+        printf("\r");
+        printf("[] Estimator - [%s] ", map_status(ekf_status).c_str());
+        for(uint k = 0; k < sensor_names.size(); k++) {
+            printf("| %s - [%s] ", sensor_names[k].c_str(), map_status(msg_in.sensor_status[k]).c_str());
+        }
+        fflush(stdout);
     }
 
     close(sock);

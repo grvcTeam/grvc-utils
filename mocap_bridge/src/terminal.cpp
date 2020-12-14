@@ -5,14 +5,7 @@
 #include <iomanip>
 #include <cerrno>
 #include <cstring>
-
-#define ANSI_COLOR_RED     "\x1b[31m"
-#define ANSI_COLOR_GREEN   "\x1b[32m"
-#define ANSI_COLOR_YELLOW  "\x1b[33m"
-#define ANSI_COLOR_BLUE    "\x1b[34m"
-#define ANSI_COLOR_MAGENTA "\x1b[35m"
-#define ANSI_COLOR_CYAN    "\x1b[36m"
-#define ANSI_COLOR_RESET   "\x1b[0m"
+#include "terminal.h"
 
 #define NOW std::chrono::system_clock::now().time_since_epoch().count()*1e-9
 
@@ -41,11 +34,21 @@ namespace terminal {
         m_print.unlock();
     }
 
-    void ERROR(std::string msg, const char errmsg[]) {
+    void ERROR(std::string msg, const char deterr[]) {
         m_print.lock();
         cerr << ANSI_COLOR_RED;
         cerr << fixed << setprecision(9);
-        cerr << "[ERROR] [" << NOW << "]: " << msg << ": " << errmsg << endl;
+        cerr << "[ERROR] [" << NOW << "]: " << msg << ": " << deterr << endl;
+        cerr << ANSI_COLOR_RESET;
+        //std::cout.flush();
+        m_print.unlock();
+    }
+
+    void ERROR(std::string msg, std::string deterr) {
+        m_print.lock();
+        cerr << ANSI_COLOR_RED;
+        cerr << fixed << setprecision(9);
+        cerr << "[ERROR] [" << NOW << "]: " << msg << ": " << deterr << endl;
         cerr << ANSI_COLOR_RESET;
         //std::cout.flush();
         m_print.unlock();
