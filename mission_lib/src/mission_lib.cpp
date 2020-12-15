@@ -214,9 +214,15 @@ void Mission::constructorFunction() {
         spinner.spin();
     });
 
-    // Wait until mavros is connected
-    while (!mavros_state_.connected && ros::ok()) {
+    // Wait until mavros is connected (15 seconds max):
+    ros::Time begin_waiting = ros::Time::now();
+    ros::Time end_waiting   = ros::Time::now() + ros::Duration(15, 0);
+    while (!mavros_state_.connected && ros::Time::now().toSec()-begin_waiting.toSec()<=end_waiting.toSec() && ros::ok()) {
         std::this_thread::sleep_for(std::chrono::milliseconds(200));
+    }
+    if (ros::Time::now().toSec()-begin_waiting.toSec() > end_waiting.toSec()) {
+        ROS_ERROR("Mission_lib [%d] waited 15 seconds for the communications without an answer, aborting constructor. Are you sure that the UAV is running?", robot_id_);
+        return;
     }
 
     getAutopilotInformation();
