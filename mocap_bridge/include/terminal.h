@@ -9,12 +9,17 @@
 #define ANSI_COLOR_CYAN    "\x1b[36m"
 #define ANSI_COLOR_RESET   "\x1b[0m"
 #define ANSI_BOLD          "\x1b[1m"
+#define ANSI_CLEAR_SCREEN  "\e[1;1H\e[2J"
 
 /**
  * @brief Prints formatted messages
  * 
  */
 namespace terminal {
+    void PRINT(std::string msg);
+    void PRINT_LN(std::string msg);
+    void PRINT_STATUS(std::string msg);
+
     /**
      * @brief Prints information message to the standard output
      * 

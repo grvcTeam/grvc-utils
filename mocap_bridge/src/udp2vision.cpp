@@ -13,7 +13,7 @@
 
 using namespace std;
 
-void wellcome_msg();
+string wellcome_msg();
 
 const vector<string> sensor_names = {"Leica", "Cam2", "Cam1"};
 
@@ -30,7 +30,7 @@ std::string map_status(const bool status) {
 
 
 int main(int argc, char **argv) {
-    wellcome_msg();
+    terminal::PRINT_LN(wellcome_msg());
     ros::init(argc, argv, "udp_2_vision");
     ros::NodeHandle n;
 
@@ -39,8 +39,11 @@ int main(int argc, char **argv) {
 
     // Gets port
     uint local_udp_port;
-    cout << "Enter port to listen to: ";
+    terminal::PRINT("Enter port to listen to: ");
     cin  >> local_udp_port;
+    stringstream ss;
+    ss << local_udp_port;
+    terminal::PRINT_LN(ss.str());
 
 
     // Creates local address structure for receiving data
@@ -69,8 +72,8 @@ int main(int argc, char **argv) {
     sock_timeo.tv_usec = 500000;
     setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, &sock_timeo, sizeof(sock_timeo));
 
-
-    stringstream ss;
+    ss.str("");
+    ss.clear();
     ss << "Listening on UDP port " << local_udp_port;
     terminal::INFO(ss.str());
 
@@ -80,7 +83,10 @@ int main(int argc, char **argv) {
     ss << "Publishing data to \"" << PUB_VISION_TOPIC_NAME << "\"";
     terminal::INFO(ss.str());
 
-    cout << "---" << endl << "Vision monitor:" << endl;
+    ss.str("");
+    ss.clear();
+    ss << "---" << endl << "Vision monitor:";
+    terminal::PRINT_LN(ss.str());
 
     while(ros::ok()) {
         udp_msg_t msg_in = {0};
@@ -106,33 +112,39 @@ int main(int argc, char **argv) {
             pub_vision.publish(msg_out);
         }
 
-        printf("\r");
-        printf("[] Estimator - [%s] ", map_status(ekf_status).c_str());
+        ss.str("");
+        ss.clear();
+        ss << fixed << setprecision(15) << "fit_param: " << msg_in.fit_param << endl;
+        ss << "Estimator - [" << map_status(ekf_status) << "] ";
         for(uint k = 0; k < sensor_names.size(); k++) {
-            printf("| %s - [%s] ", sensor_names[k].c_str(), map_status(msg_in.sensor_status[k]).c_str());
+            ss << "| " << sensor_names[k] << " - [" << map_status(msg_in.sensor_status[k]) << "] ";
         }
-        fflush(stdout);
+        ss << endl;
+        terminal::PRINT_STATUS(ss.str());
     }
 
     close(sock);
-    cout << endl;
+    ss << "---" << endl;
+    terminal::PRINT(ss.str());
     terminal::INFO("Ending");
     return 0;
 }
 
-void wellcome_msg() {
+string wellcome_msg() {
+    stringstream ss;
 
-cout << " --------------------------------------------------" << endl;
-cout << "\
+    ss << " --------------------------------------------------" << endl;
+    ss << "\
             _      ____        _     _             \n\
   _   _  __| |_ __|___ \\__   _(_)___(_) ___  _ __  \n\
  | | | |/ _` | '_ \\ __) \\ \\ / / / __| |/ _ \\| '_ \\ \n\
  | |_| | (_| | |_) / __/ \\ V /| \\__ \\ | (_) | | | |\n\
   \\__,_|\\__,_| .__/_____| \\_/ |_|___/_|\\___/|_| |_|\n\
              |_|                                   " << endl;
-cout << "              UDP to ROS Vision Pose              " << endl;
-cout << "           Developed by Diego B. Gayango           " << endl;
-cout << " --------------------------------------------------" << endl;
-cout << endl;
+    ss << "              UDP to ROS Vision Pose              " << endl;
+    ss << "           Developed by Diego B. Gayango           " << endl;
+    ss << " --------------------------------------------------" << endl;
+    ss << endl;
 
+    return ss.str();
 }
