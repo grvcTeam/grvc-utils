@@ -15,7 +15,7 @@ using namespace std;
 
 void wellcome_msg();
 
-const vector<string> sensor_names = {"Leica", "Cam2", "Cam1"};
+const vector<string> sensor_names = {"Leica", "Cam0", "Cam1"};
 
 std::string map_status(const bool status) {
     stringstream ss;
@@ -106,11 +106,13 @@ int main(int argc, char **argv) {
             pub_vision.publish(msg_out);
         }
 
-        printf("\r");
-        printf("[] Estimator - [%s] ", map_status(ekf_status).c_str());
+        char s[1000] = {0};
+        sprintf(s, "\r");
+        sprintf(s, "%sEstimator - [%s] ", s, map_status(ekf_status).c_str());
         for(uint k = 0; k < sensor_names.size(); k++) {
-            printf("| %s - [%s] ", sensor_names[k].c_str(), map_status(msg_in.sensor_status[k]).c_str());
+            sprintf(s, "%s| %s - [%s] ", s, sensor_names[k].c_str(), map_status(msg_in.sensor_status[k]).c_str());
         }
+        write(STDOUT_FILENO, s, sizeof(s));
         fflush(stdout);
     }
 
