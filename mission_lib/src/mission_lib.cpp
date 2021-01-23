@@ -290,7 +290,7 @@ void Mission::setFlightMode(const std::string& _flight_mode) {
         ROS_INFO("Mission lib [%d]: Set flight mode [%s] response.success = %s", robot_id_, _flight_mode.c_str(), \
             flight_mode_service.response.mode_sent ? "true" : "false");
 #endif
-        ROS_INFO("Mission lib [%d]: Trying to set [%s] mode; mavros_state_.mode = [%s]", robot_id_, _flight_mode.c_str(), mavros_state_.mode.c_str());
+        ROS_INFO("Mission lib [%d]: mavros_state_.mode = [%s]", robot_id_, mavros_state_.mode.c_str());
     }
 }
 
@@ -312,7 +312,7 @@ void Mission::arm(bool _arm) {
         // ROS_INFO("Set [%s] response.success = %s", _arm ? "armed" : "disarmed", \
         //     arm_service.response.mode_sent ? "true" : "false");
 #endif
-        ROS_INFO("Mission lib [%d]: Trying to [%s]; mavros_state_.armed = [%s]", robot_id_, _arm ? "arm" : "disarm", mavros_state_.armed ? "true" : "false");
+        ROS_INFO("Mission lib [%d]: mavros_state_.armed = [%s]", robot_id_, mavros_state_.armed ? "true" : "false");
     }
 }
 
@@ -483,7 +483,7 @@ void Mission::setParam(const std::string& _param_id, int _param_value) {
         // ROS_INFO("Set param [%s] response.success = %s", _param_id.c_str(), \
         //     set_param_service.response.mode_sent ? "true" : "false");
 #endif
-        ROS_INFO("Mission lib [%d]: Trying to set [%s] param to [%10d]", robot_id_, _param_id.c_str(), _param_value);
+        ROS_INFO("Mission lib [%d]: param now is [%10d]", robot_id_, _param_value);
     }
 }
 
@@ -632,7 +632,6 @@ bool Mission::pushClear() {
     // ROS_INFO("Set param [%s] response.success = %s", _param_id.c_str(), \
     //     set_param_service.response.mode_sent ? "true" : "false");
 #endif
-    ROS_INFO("Mission lib [%d]: Trying to clear mission", robot_id_);
 
     return true;
 }
@@ -640,9 +639,10 @@ bool Mission::pushClear() {
 
 void Mission::start() {
     if (uav_has_empty_mission_) {
-        ROS_ERROR("Mission lib [%d]: start() called but the UAV doesn't have a mission. Ignoring the start() call.", robot_id_);
+        ROS_WARN("Mission lib [%d]: start() called but the UAV doesn't have a mission. Ignoring the start() call.", robot_id_);
     } else if (active_waypoint_ != -1) {
-        ROS_ERROR("Mission lib [%d]: start() called but the UAV is already doing a mission. Ignoring the start() call.", robot_id_);
+        // ROS_WARN("Mission lib [%d]: start() called but the UAV is either landed armed or doing a mission. If landed armed, please disarm it before calling start(). If already doing a mission, ignoring the start() call and just do the new mission.", robot_id_);
+        setFlightMode("AUTO.MISSION");
     } else {
         setFlightMode("AUTO.MISSION");
         arm(false); 
