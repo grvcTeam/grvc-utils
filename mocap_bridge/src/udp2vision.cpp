@@ -15,16 +15,24 @@ using namespace std;
 
 void wellcome_msg();
 
-const vector<string> sensor_names = {"Leica", "Cam0", "Cam1"};
+const vector<string> sensor_names = {"Leica", "CAM0", "CAM1"};
 
-std::string map_status(const bool status) {
+std::string map_status(const bool status, const uint8_t error_code = 0) {
     stringstream ss;
+    ss << ANSI_BOLD;
     if(status) {
-        ss << ANSI_COLOR_GREEN << ANSI_BOLD << " ON" << ANSI_COLOR_RESET;
+        ss << ANSI_COLOR_GREEN << "ON ";
     }
     else {
-        ss << ANSI_COLOR_RED << ANSI_BOLD << "OFF" << ANSI_COLOR_RESET;
+        if(error_code) {
+            ss << ANSI_COLOR_RED;
+            ss << "E" << std::setfill('0') << std::setw(2) << int(error_code);
+        } else {
+            ss << ANSI_COLOR_RED << "OFF";
+        }
+        
     }
+    ss << ANSI_COLOR_RESET;
     return ss.str();
 }
 
@@ -71,7 +79,7 @@ int main(int argc, char **argv) {
 
 
     stringstream ss;
-    ss << "Listening on UDP port " << local_udp_port;
+    ss << "Listening to UDP port " << local_udp_port;
     terminal::INFO(ss.str());
 
     sleep(1);
@@ -79,6 +87,12 @@ int main(int argc, char **argv) {
     ss.str(std::string());
     ss << "Publishing data to \"" << PUB_VISION_TOPIC_NAME << "\"";
     terminal::INFO(ss.str());
+
+    cout << "---" << endl << "Error codes:" << endl;
+    cout << "E01 - Tracker confidence error." << endl;
+    cout << "E02 - Velocity error." << endl;
+    cout << "E03 - Not finite error." << endl;
+
 
     cout << "---" << endl << "Vision monitor:" << endl;
 
@@ -110,7 +124,7 @@ int main(int argc, char **argv) {
         sprintf(s, "\r");
         sprintf(s, "%sEstimator - [%s] ", s, map_status(ekf_status).c_str());
         for(uint k = 0; k < sensor_names.size(); k++) {
-            sprintf(s, "%s| %s - [%s] ", s, sensor_names[k].c_str(), map_status(msg_in.sensor_status[k]).c_str());
+            sprintf(s, "%s| %s - [%s] ", s, sensor_names[k].c_str(), map_status(msg_in.sensor_status[k], msg_in.error_status[k]).c_str());
         }
         write(STDOUT_FILENO, s, sizeof(s));
         fflush(stdout);

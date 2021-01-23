@@ -39,9 +39,9 @@ struct {
  */
 struct {
     stamp_t stamp;
-    float fit_param;
     odom_t ekf;
     bool sensor_status[10];
+    uint8_t error_status[10];
 } typedef udp_msg_t;
 
 
