@@ -46,7 +46,7 @@
 #define FIRMWARE_VERSION_TYPE_OFFICIAL 255 /* official stable release | */
 #define FIRMWARE_VERSION_TYPE_ENUM_END 256 /*  | */
 
-namespace grvc { namespace mission_ns {
+namespace grvc {
 
 Mission::Mission()
     : tf_listener_(tf_buffer_)
@@ -1043,4 +1043,4 @@ float Mission::getYaw(const geometry_msgs::Quaternion& _quat) {
     return yaw;
 }
 
-}}	// namespace grvc::mission_ns
+}	// namespace grvc

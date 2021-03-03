@@ -42,7 +42,7 @@
 #include <geometry_msgs/TwistStamped.h>
 #include <geometry_msgs/TransformStamped.h>
 
-namespace grvc { namespace mission_ns {
+namespace grvc {
 
 enum struct AutopilotType {PX4, APM, DJI, UNKNOWN};
 enum struct AirframeType {FIXED_WING, MULTICOPTER, VTOL, OTHER, UNKNOWN};
@@ -169,6 +169,6 @@ private:
     bool id_is_unique_;
 };
 
-}}	// namespace grvc::mission_ns
+}	// namespace grvc
 
 #endif // MISSION_LIB_H

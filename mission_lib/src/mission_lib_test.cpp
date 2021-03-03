@@ -21,7 +21,7 @@
 
 #include <mission_lib.h>
 
-class InheritanceTestClass : public grvc::mission_ns::Mission {
+class InheritanceTestClass : public grvc::Mission {
   public:
    InheritanceTestClass() {
        std::cout << " InheritanceTestClass running " << std::endl;
@@ -99,7 +99,7 @@ int main(int _argc, char** _argv) {
     land_pose.pose.position.y = 0;
     land_pose.pose.position.z = 0;
 
-    grvc::mission_ns::Mission mission;
+    grvc::Mission mission;
     std::cin.get();         // Wait for user input.
     mission.addTakeOffWp(takeoff_pose);
     // mission.addTakeOffWp(takeoff_pose, minimum_pitch);
