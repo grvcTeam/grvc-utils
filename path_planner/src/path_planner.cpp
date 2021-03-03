@@ -53,6 +53,8 @@ namespace plt = matplotlibcpp;  // namespace-alias-definition: makes a synonym o
 
 namespace grvc {
 
+using json = nlohmann::json;
+
 // Brief Constructor for the simplest case of path planning: return the final point, straight line.
 PathPlanner::PathPlanner() {
     trivial_path_planner_ = true;
@@ -1039,15 +1041,46 @@ std::vector<float> PathPlanner::getElevations(const std::vector<geographic_msgs:
 
     curl = curl_easy_init();
     if(curl) {
-        std::string url = "http://localhost:5000/v1/eudem25m?locations=37.37,-6|38.139309,-3.173386";
+        std::string url = "http://localhost:5000/v1/eudem25m?locations=";
+        for (int i=0; i<_geopoints.size(); i++) {
+            if (i!=0) {
+                url.append("|");
+            }
+            url.append(std::to_string(_geopoints[i].latitude).c_str());
+            url.append(",");
+            url.append(std::to_string(_geopoints[i].longitude).c_str());
+        }
+
         curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, writeCallback);
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, &readBuffer);
         res = curl_easy_perform(curl);
         curl_easy_cleanup(curl);
 
-        std::cout << readBuffer << std::endl;
+        // std::cout << readBuffer << std::endl;
     }
+
+    if (readBuffer.size() == 0) {
+        ROS_ERROR("Path Planner: localhost of Open Topo Data didn't answer. Returning empty elevations vector.");
+    } else {
+        try {   // try to parse the whole json
+            json json_tree_parsed = json::parse( std::string(readBuffer) );
+
+            try {   // try to parse results separately:
+                for (auto& current_result : json_tree_parsed.at("results").items() ) {
+                    elevations.push_back( current_result.value().at("elevation").get<float>() );
+                }
+            } catch (json::exception &e) { }
+        } catch (...) { // catch any exception
+            ROS_ERROR("Path Planner: error parsing the json response from the localhost of Open Topo Data.");
+        }
+    }
+
+    // std::cout << "Elevations: ";
+    // for (float current_elevation : elevations) {
+    //     std::cout << current_elevation << " ";
+    // }
+    // std::cout << std::endl;
 
     return elevations;
 }

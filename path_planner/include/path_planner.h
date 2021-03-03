@@ -115,11 +115,12 @@ public:
     bool checkIfTwoPointsAreVisible(const geometry_msgs::PointStamped& _initial_point_stamped, const geometry_msgs::PointStamped& _final_point_stamped) const;
     bool checkIfTwoPointsAreVisible(const geographic_msgs::GeoPoint& _initial_geopoint, const geographic_msgs::GeoPoint& _final_geopoint) const;
 
+    std::vector<float> getElevations(const std::vector<geographic_msgs::GeoPoint>& _geopoints);
+
 private:
 
     void polygonConstructorFunction(const std::vector<geometry_msgs::Polygon>& _obstacle_polygon_vector_cartesian, const geometry_msgs::Polygon& _geofence_polygon_cartesian, unsigned int _max_grid_side);
 
-    std::vector<float> getElevations(const std::vector<geographic_msgs::GeoPoint>& _geopoints);
     static size_t writeCallback(void *contents, size_t size, size_t nmemb, void *userp);
 
     // Struct that will be initialized for each cell explored in the A* algorithm. The algorithm will construct a map of "CellInfo" (with a cell identifier as key) in order to reach the solution.
