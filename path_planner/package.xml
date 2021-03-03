@@ -2,7 +2,7 @@
 <package>
   <name>path_planner</name>
   <version>0.0.0</version>
-  <description>For calculating paths with an A* algorithm. Can build automatically the obstacles map, draw or plot results, and take into account elevation irregularities of the ground.</description>
+  <description>For calculating paths with an A* algorithm, both for Cartesian and geographic coordinates. Can build automatically the obstacles map, draw or plot results, and take into account elevation irregularities of the ground.</description>
 
   <maintainer email="amontesromero@us.es">Ángel Manuel Montes Romero</maintainer>
 

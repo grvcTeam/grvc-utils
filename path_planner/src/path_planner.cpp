@@ -2,28 +2,28 @@
  * ----------------------------------------------------------------------------------------------------------------------
  * Path Planner
  * ----------------------------------------------------------------------------------------------------------------------
- * For calculating paths with an A* algorithm. Can build automatically the obstacles map, draw or plot results, and take into account elevation irregularities of the ground.
- * 
+ * For calculating paths with an A* algorithm, both for Cartesian and geographic coordinates. Can build automatically the obstacles map, draw or plot results, and take into account elevation irregularities of the ground.
+ *
  * Developed and used for the projects MULTIDRONE and AERIAL-CORE.
  *
  * This library can optionally use the following extra software for additional features (all with MIT Licenses):
  *  - "ajnisbet/opentopodata", version 1.5.0. Open Topo Data is a REST API server for your elevation data. Copyright (c) 2020 Andrew Nisbet.
  *  - "nlohmann/json" library, version 3.9.1. JSON parser used to extract the elevation data from Open Topo Data localhost responses. Copyright (c) Copyright (c) 2013-2021 Niels Lohmann.
  *  - "lava/matplotlib-cpp". Plotting library that works by wrapping the popular python plotting library matplotlib. Needs a working python installation. Copyright (c) 2014 Benno Evers.
- * 
+ *
  * ----------------------------------------------------------------------------------------------------------------------
  * The MIT License (MIT)
- * 
+ *
  * Copyright (c) 2020 GRVC University of Seville
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
  * documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
  * rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to
  * permit persons to whom the Software is furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the
  * Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
  * WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS
  * OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
@@ -146,10 +146,10 @@ PathPlanner::PathPlanner(const std::vector<geometry_msgs::Polygon>& _obstacle_po
 
 
 // Constructor that generates the obstacle map (no-fly zones) for the A* algorithm from polygons as obstacles and geofence in geographic coordinates (polygons must be closed, meaning that they must start and end with the same point).
-PathPlanner::PathPlanner(const std::vector< std::vector<geographic_msgs::GeoPoint> >& _obstacle_polygon_vector_geo, const std::vector<geographic_msgs::GeoPoint>& _geofence_geo, unsigned int _max_grid_side) {
+PathPlanner::PathPlanner(const std::vector< std::vector<geographic_msgs::GeoPoint> >& _obstacle_polygon_vector_geo, const std::vector<geographic_msgs::GeoPoint>& _geofence_polygon_geo, unsigned int _max_grid_side) {
     arbitrary_origin_geo_exist_ = false;
-    if (_geofence_geo.size()>0) {
-        arbitrary_origin_geo_ = _geofence_geo[0];
+    if (_geofence_polygon_geo.size()>0) {
+        arbitrary_origin_geo_ = _geofence_polygon_geo[0];
         arbitrary_origin_geo_exist_ = true;
     } else {
         ROS_ERROR("Path Planner: empty geofence, exiting constructor.");
@@ -157,8 +157,8 @@ PathPlanner::PathPlanner(const std::vector< std::vector<geographic_msgs::GeoPoin
     }
 
     geometry_msgs::Polygon geofence_polygon_cartesian;
-    for (int i=0; i<_geofence_geo.size(); i++) {
-        geofence_polygon_cartesian.points.push_back( geographic_to_cartesian(_geofence_geo[i], arbitrary_origin_geo_) );
+    for (int i=0; i<_geofence_polygon_geo.size(); i++) {
+        geofence_polygon_cartesian.points.push_back( geographic_to_cartesian(_geofence_polygon_geo[i], arbitrary_origin_geo_) );
     }
 
     std::vector<geometry_msgs::Polygon> obstacle_polygon_vector_cartesian;
@@ -920,6 +920,10 @@ std::vector<geographic_msgs::GeoPoint> PathPlanner::getPath(const geographic_msg
     for (int i=0; i<path.size(); i++) {
         path_geo.push_back( cartesian_to_geographic(path[i], arbitrary_origin_geo_) );
     }
+
+#ifdef WRITE_RESULTS_IN_TERMINAL
+    std::cout << "Path geo: " << std::endl; for (int i=0; i<path_geo.size(); i++)       std::cout << path_geo[i]       << std::endl; std::cout << std::endl;
+#endif
 
     return path_geo;
 }   // end getPath for GeoPoint.
