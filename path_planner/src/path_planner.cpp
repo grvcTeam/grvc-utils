@@ -911,7 +911,10 @@ std::vector<geometry_msgs::Point> PathPlanner::getPath(const geometry_msgs::Poin
 std::vector<geographic_msgs::GeoPoint> PathPlanner::getPath(const geographic_msgs::GeoPoint& _initial_geopoint, const geographic_msgs::GeoPoint& _final_geopoint, bool _movement_pattern) {
     std::vector<geographic_msgs::GeoPoint> path_geo;
 
-    if (!arbitrary_origin_geo_exist_) return path_geo;
+    if (!arbitrary_origin_geo_exist_) {
+        ROS_ERROR("Path Planner: geopoint given as input parameter but the constructor didn't used geopoint, so there is no geo origin. Returning empty path.");
+        return path_geo;
+    }
 
     geometry_msgs::Point32 initial_point32 = geographic_to_cartesian(_initial_geopoint, arbitrary_origin_geo_);
 
@@ -998,35 +1001,42 @@ std::vector<geometry_msgs::PointStamped> PathPlanner::getPathWithTimePredictions
 
 
 
-std::vector<geometry_msgs::PointStamped> PathPlanner::getPathCorrectingHeightFromOrigin(const geometry_msgs::PointStamped& _initial_point, const geometry_msgs::PointStamped& _final_point, bool _movement_pattern) {
-    std::vector<geometry_msgs::PointStamped> path_to_return;
+// getPath for GeoPoint that gets in the input altitude fields the desired height of the UAV from the ground, and returns a path of geopoints free of collisions where the altitude fields represent the height of the UAV from the origin to maintain that height from the ground (taking into account elevation irregularities of the ground).
+std::vector<geographic_msgs::GeoPoint> PathPlanner::getPathWithRelativeAltitude(const geographic_msgs::GeoPoint& _initial_geopoint, const geographic_msgs::GeoPoint& _final_geopoint, float _origin_elevation, bool _movement_pattern) {
 
-    if (!arbitrary_origin_geo_exist_) return path_to_return;
+    std::vector<geographic_msgs::GeoPoint> path_to_return = getPathWithAbsoluteAltitude(_initial_geopoint, _final_geopoint, _movement_pattern);
 
-}   // end getPathCorrectingHeightFromOrigin.
+    if (path_to_return.size()==0) return path_to_return;
+
+    for (int i=0; i<path_to_return.size(); i++) {
+        path_to_return[i].altitude -= _origin_elevation;
+    }
+
+#ifdef WRITE_RESULTS_IN_TERMINAL
+    std::cout << "Path geo with relative altitude: " << std::endl; for (int i=0; i<path_to_return.size(); i++)       std::cout << path_to_return[i]       << std::endl; std::cout << std::endl;
+#endif
+
+    return path_to_return;
+
+}   // end getPathWithRelativeAltitude.
 
 
 
-std::vector<geographic_msgs::GeoPoint> PathPlanner::getPathCorrectingHeightFromOrigin(const geographic_msgs::GeoPoint& _initial_point, const geographic_msgs::GeoPoint& _final_point, bool _movement_pattern) {
-    std::vector<geographic_msgs::GeoPoint> path_to_return;
-
-    if (!arbitrary_origin_geo_exist_) return path_to_return;
-
-}   // end getPathCorrectingHeightFromOrigin.
-
-
-
-std::vector<geographic_msgs::GeoPoint> PathPlanner::getPathWithAltitude(const geographic_msgs::GeoPoint& _initial_geopoint, const geographic_msgs::GeoPoint& _final_geopoint, bool _movement_pattern) {
+// getPath for GeoPoint that gets in the input altitude fields the desired height of the UAV from the ground, and returns a path of geopoints free of collisions where the altitude fields represent the absolute altitude of the UAV to maintain that height from the ground (taking into account elevation irregularities of the ground).
+std::vector<geographic_msgs::GeoPoint> PathPlanner::getPathWithAbsoluteAltitude(const geographic_msgs::GeoPoint& _initial_geopoint, const geographic_msgs::GeoPoint& _final_geopoint, bool _movement_pattern) {
     std::vector<geographic_msgs::GeoPoint> empty_path_to_return;
 
-    if (!arbitrary_origin_geo_exist_) return empty_path_to_return;
+    if (!arbitrary_origin_geo_exist_) {
+        ROS_ERROR("Path Planner: geopoint given as input parameter but the constructor didn't used geopoint, so there is no geo origin. Returning empty path.");
+        return empty_path_to_return;
+    }
 
     std::vector<geographic_msgs::GeoPoint> path_to_return = getPath(_initial_geopoint, _final_geopoint, _movement_pattern);
 
     std::vector<float> elevations = getElevations(path_to_return);
 
     if (elevations.size()==0) {
-        ROS_ERROR("Path Planner: returning empty path because of error getting elevations from Open Topo Data didn't answer. Couldn't correct the altitude of the path with the elevations of the ground.");
+        ROS_ERROR("Path Planner: returning empty path because of error getting elevations from Open Topo Data. Couldn't correct the altitude of the path with the elevations of the ground.");
         return empty_path_to_return;
     }
 
@@ -1035,19 +1045,19 @@ std::vector<geographic_msgs::GeoPoint> PathPlanner::getPathWithAltitude(const ge
     }
 
 #ifdef WRITE_RESULTS_IN_TERMINAL
-    std::cout << "Path geo with altitude: " << std::endl; for (int i=0; i<path_to_return.size(); i++)       std::cout << path_to_return[i]       << std::endl; std::cout << std::endl;
+    std::cout << "Path geo with absolute altitude: " << std::endl; for (int i=0; i<path_to_return.size(); i++)       std::cout << path_to_return[i]       << std::endl; std::cout << std::endl;
 #endif
 
     return path_to_return;
 
-}   // end getPathWithAltitude.
+}   // end getPathWithAbsoluteAltitude.
 
 
 
 size_t PathPlanner::writeCallback(void *contents, size_t size, size_t nmemb, void *userp) {
     ((std::string*)userp)->append((char*)contents, size * nmemb);
     return size * nmemb;
-}
+}   // end writeCallback
 
 
 
@@ -1104,7 +1114,7 @@ std::vector<float> PathPlanner::getElevations(const std::vector<geographic_msgs:
     // std::cout << std::endl << std::endl;
 
     return elevations;
-}
+}   // end getElevations
 
 
 
@@ -1336,7 +1346,10 @@ bool PathPlanner::checkIfPointInsideGeofence (const geometry_msgs::PointStamped&
 
 
 bool PathPlanner::checkIfPointInsideGeofence(const geographic_msgs::GeoPoint& _test_geopoint) const {
-    if (!arbitrary_origin_geo_exist_) return false;
+    if (!arbitrary_origin_geo_exist_) {
+        ROS_ERROR("Path Planner: geopoint given as input parameter but the constructor didn't used geopoint, so there is no geo origin. Returning false.");
+        return false;
+    }
 
     geometry_msgs::Point32 test_point_cartesian = geographic_to_cartesian(_test_geopoint, arbitrary_origin_geo_);
 
@@ -1377,7 +1390,10 @@ bool PathPlanner::checkIfPointInsideObstacles(const geometry_msgs::PointStamped&
 
 
 bool PathPlanner::checkIfPointInsideObstacles(const geographic_msgs::GeoPoint& _test_geopoint) const {
-    if (!arbitrary_origin_geo_exist_) return false;
+    if (!arbitrary_origin_geo_exist_) {
+        ROS_ERROR("Path Planner: geopoint given as input parameter but the constructor didn't used geopoint, so there is no geo origin. Returning false.");
+        return false;
+    }
 
     geometry_msgs::Point32 test_point_cartesian = geographic_to_cartesian(_test_geopoint, arbitrary_origin_geo_);
 
@@ -1409,7 +1425,10 @@ bool PathPlanner::checkIfPointIsValid(const geometry_msgs::PointStamped& _test_p
 
 
 bool PathPlanner::checkIfPointIsValid(const geographic_msgs::GeoPoint& _test_geopoint) const {
-    if (!arbitrary_origin_geo_exist_) return false;
+    if (!arbitrary_origin_geo_exist_) {
+        ROS_ERROR("Path Planner: geopoint given as input parameter but the constructor didn't used geopoint, so there is no geo origin. Returning false.");
+        return false;
+    }
 
     geometry_msgs::Point32 test_point_cartesian = geographic_to_cartesian(_test_geopoint, arbitrary_origin_geo_);
 
@@ -1442,7 +1461,10 @@ bool PathPlanner::checkIfTwoPointsAreVisible(const geometry_msgs::PointStamped& 
 
 
 bool PathPlanner::checkIfTwoPointsAreVisible(const geographic_msgs::GeoPoint& _initial_geopoint, const geographic_msgs::GeoPoint& _final_geopoint) const {
-    if (!arbitrary_origin_geo_exist_) return false;
+    if (!arbitrary_origin_geo_exist_) {
+        ROS_ERROR("Path Planner: geopoint given as input parameter but the constructor didn't used geopoint, so there is no geo origin. Returning false.");
+        return false;
+    }
 
     geometry_msgs::Point32 initial_point32 = geographic_to_cartesian(_initial_geopoint, arbitrary_origin_geo_);
 
