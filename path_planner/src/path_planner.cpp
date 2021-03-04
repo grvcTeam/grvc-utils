@@ -1016,10 +1016,29 @@ std::vector<geographic_msgs::GeoPoint> PathPlanner::getPathCorrectingHeightFromO
 
 
 
-std::vector<geographic_msgs::GeoPoint> PathPlanner::getPathWithAltitude(const geographic_msgs::GeoPoint& _initial_point, const geographic_msgs::GeoPoint& _final_point, bool _movement_pattern) {
-    std::vector<geographic_msgs::GeoPoint> path_to_return;
+std::vector<geographic_msgs::GeoPoint> PathPlanner::getPathWithAltitude(const geographic_msgs::GeoPoint& _initial_geopoint, const geographic_msgs::GeoPoint& _final_geopoint, bool _movement_pattern) {
+    std::vector<geographic_msgs::GeoPoint> empty_path_to_return;
 
-    if (!arbitrary_origin_geo_exist_) return path_to_return;
+    if (!arbitrary_origin_geo_exist_) return empty_path_to_return;
+
+    std::vector<geographic_msgs::GeoPoint> path_to_return = getPath(_initial_geopoint, _final_geopoint, _movement_pattern);
+
+    std::vector<float> elevations = getElevations(path_to_return);
+
+    if (elevations.size()==0) {
+        ROS_ERROR("Path Planner: returning empty path because of error getting elevations from Open Topo Data didn't answer. Couldn't correct the altitude of the path with the elevations of the ground.");
+        return empty_path_to_return;
+    }
+
+    for (int i=0; i<elevations.size(); i++) {
+        path_to_return[i].altitude += elevations[i];
+    }
+
+#ifdef WRITE_RESULTS_IN_TERMINAL
+    std::cout << "Path geo with altitude: " << std::endl; for (int i=0; i<path_to_return.size(); i++)       std::cout << path_to_return[i]       << std::endl; std::cout << std::endl;
+#endif
+
+    return path_to_return;
 
 }   // end getPathWithAltitude.
 
@@ -1041,6 +1060,7 @@ std::vector<float> PathPlanner::getElevations(const std::vector<geographic_msgs:
 
     curl = curl_easy_init();
     if(curl) {
+        // Prepare the URL for cURL:
         std::string url = "http://localhost:5000/v1/eudem25m?locations=";
         for (int i=0; i<_geopoints.size(); i++) {
             if (i!=0) {
@@ -1051,6 +1071,7 @@ std::vector<float> PathPlanner::getElevations(const std::vector<geographic_msgs:
             url.append(std::to_string(_geopoints[i].longitude).c_str());
         }
 
+        // Get string data to the readBuffer from the URL with cURL:
         curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, writeCallback);
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, &readBuffer);
@@ -1063,16 +1084,16 @@ std::vector<float> PathPlanner::getElevations(const std::vector<geographic_msgs:
     if (readBuffer.size() == 0) {
         ROS_ERROR("Path Planner: localhost of Open Topo Data didn't answer. Returning empty elevations vector.");
     } else {
-        try {   // try to parse the whole json
+        try {   // try to parse the whole json string...
             json json_tree_parsed = json::parse( std::string(readBuffer) );
 
-            try {   // try to parse results separately:
-                for (auto& current_result : json_tree_parsed.at("results").items() ) {
-                    elevations.push_back( current_result.value().at("elevation").get<float>() );
-                }
-            } catch (json::exception &e) { }
+            // ... and then get the different results (elevations) separately by iterating them:
+            for (auto& current_result : json_tree_parsed.at("results").items() ) {
+                elevations.push_back( current_result.value().at("elevation").get<float>() );
+            }
         } catch (...) { // catch any exception
-            ROS_ERROR("Path Planner: error parsing the json response from the localhost of Open Topo Data.");
+            ROS_ERROR("Path Planner: error parsing the json response from the localhost of Open Topo Data. Printing the json string response:");
+            std::cout << readBuffer << std::endl;
         }
     }
 
@@ -1080,7 +1101,7 @@ std::vector<float> PathPlanner::getElevations(const std::vector<geographic_msgs:
     // for (float current_elevation : elevations) {
     //     std::cout << current_elevation << " ";
     // }
-    // std::cout << std::endl;
+    // std::cout << std::endl << std::endl;
 
     return elevations;
 }

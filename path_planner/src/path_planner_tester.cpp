@@ -87,8 +87,8 @@ int main(int _argc, char** _argv) {
 
 
     geographic_msgs::GeoPoint initial_geopoint, final_geopoint;
-    initial_geopoint.latitude = 38.132739;  initial_geopoint.longitude = -3.184325;
-    final_geopoint.latitude = 38.143663;    final_geopoint.longitude = -3.165112;
+    initial_geopoint.latitude = 38.132739;  initial_geopoint.longitude = -3.184325; initial_geopoint.altitude = 10;
+    final_geopoint.latitude = 38.143663;    final_geopoint.longitude = -3.165112;   final_geopoint.altitude = 20;
 
     geometry_msgs::PointStamped initial_pointstamped;
     geometry_msgs::PointStamped final_pointstamped;
@@ -100,9 +100,9 @@ int main(int _argc, char** _argv) {
 
 
     grvc::PathPlanner path_planner_geopoint = grvc::PathPlanner(obstacle_polygon_vector_geo, geofence_polygon_geo);
-    std::vector<geographic_msgs::GeoPoint> path_geopoint = path_planner_geopoint.getPath(initial_geopoint, final_geopoint);
-
-    path_planner_geopoint.getElevations(path_geopoint);
+    // std::vector<geographic_msgs::GeoPoint> path_geopoint = path_planner_geopoint.getPath(initial_geopoint, final_geopoint);
+    // path_planner_geopoint.getElevations(path_geopoint);
+    std::vector<geographic_msgs::GeoPoint> path_geopoint = path_planner_geopoint.getPathWithAltitude(initial_geopoint, final_geopoint);
 
 
     // grvc::PathPlanner path_planner_pointstamped = grvc::PathPlanner(obstacle_polygon_vector_cartesian, geofence_polygon_cartesian);

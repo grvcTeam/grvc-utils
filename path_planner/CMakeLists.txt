@@ -4,7 +4,7 @@ project(path_planner)
 ## Add support for C++11, supported in ROS Kinetic and newer
 add_definitions(-std=c++11)
 
-# add_definitions(-DVERBOSE)                    # Uncoment for outputting hints in the terminal warnings when the path couldn't be found.
+# add_definitions(-DVERBOSE)                    # Uncoment for outputting hints or warnings in the terminal when the path couldn't be found.
 # add_definitions(-DWRITE_RESULTS_IN_TERMINAL)  # Uncoment for outputting in the terminal the path of points, path distance, computation time and other useful information.
 # add_definitions(-DDRAW_IN_TERMINAL)           # Uncoment for drawing in the terminal the path with the geofence and map of obstacles. Draw both in the constructor and in the getPath method, in this one with the path.
 # add_definitions(-DPLOT_GRAPH)                 # Uncoment for plotting a graphic (using matplotlib-cpp) of the path (grid path and real path), geofence and map of obstacles. Plot both in the constructor and in the getPath method, in this one with the path.

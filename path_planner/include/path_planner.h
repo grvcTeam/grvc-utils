@@ -49,7 +49,7 @@
 
 #include <geographic_to_cartesian.h>
 
-// #define VERBOSE                      // Uncoment for outputting hints in the terminal warnings when the path couldn't be found.
+// #define VERBOSE                      // Uncoment for outputting hints or warnings in the terminal when the path couldn't be found.
 // #define WRITE_RESULTS_IN_TERMINAL    // Uncoment for outputting in the terminal the path of points, path distance, computation time and other useful information.
 // #define DRAW_IN_TERMINAL             // Uncoment for drawing in the terminal the path with the geofence and map of obstacles. Draw both in the constructor and in the getPath method, in this one with the path.
 // #define PLOT_GRAPH                   // Uncoment for plotting a graphic (using matplotlib-cpp) of the path (grid path and real path), geofence and map of obstacles. Plot both in the constructor and in the getPath method, in this one with the path.
@@ -83,7 +83,7 @@ public:
 
     std::vector<geometry_msgs::PointStamped> getPathCorrectingHeightFromOrigin(const geometry_msgs::PointStamped& _initial_point, const geometry_msgs::PointStamped& _final_point, bool _movement_pattern=0);   // getPath for PointStamped that gets in the points the desired height of the UAV from the ground, and corrects that height from the ground origin with the elevation variations of the irregular ground (communicating with a topographic REST API server).
     std::vector<geographic_msgs::GeoPoint>   getPathCorrectingHeightFromOrigin(const geographic_msgs::GeoPoint& _initial_point, const geographic_msgs::GeoPoint& _final_point, bool _movement_pattern=0);       // getPath for GeoPoint     that gets in the points the desired height of the UAV from the ground, and corrects that height from the ground origin with the elevation variations of the irregular ground (communicating with a topographic REST API server).
-    std::vector<geographic_msgs::GeoPoint>   getPathWithAltitude(const geographic_msgs::GeoPoint& _initial_point, const geographic_msgs::GeoPoint& _final_point, bool _movement_pattern=0);                         // getPath for GeoPoint     that gets in the points the desired height of the UAV from the ground, and has as output the absolute altitude of the waypoints from the sea level.
+    std::vector<geographic_msgs::GeoPoint>   getPathWithAltitude(const geographic_msgs::GeoPoint& _initial_geopoint, const geographic_msgs::GeoPoint& _final_geopoint, bool _movement_pattern=0);                         // getPath for GeoPoint     that gets in the points the desired height of the UAV from the ground, and has as output the absolute altitude of the waypoints from the sea level.
 
     double getDistance()     const { return path_distance_; }        // Getter that returns path_distance_.
     double getFlatDistance() const { return path_flat_distance_; }   // Getter that returns path_flat_distance_.
