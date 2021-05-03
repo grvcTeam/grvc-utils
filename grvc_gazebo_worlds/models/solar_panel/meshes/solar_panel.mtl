@@ -1,0 +1,22 @@
+# Blender MTL File: 'solar_panel.blend'
+# Material Count: 2
+
+newmtl Material.001
+Ns 827.869838
+Ka 1.000000 1.000000 1.000000
+Kd 0.800000 0.800000 0.800000
+Ks 0.036364 0.036364 0.036364
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 2
+map_Kd /home/angel/3D models/solar panel/solar_panel.jpg
+map_d /home/angel/3D models/solar panel/solar_panel.jpg
+
+newmtl None
+Ns 500
+Ka 0.8 0.8 0.8
+Kd 0.8 0.8 0.8
+Ks 0.8 0.8 0.8
+d 1
+illum 2

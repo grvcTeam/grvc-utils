@@ -1,0 +1,25 @@
+<?xml version="1.0" ?>
+<sdf version="1.6">
+  <model name="spinning_wind_turbine_base">
+    <static>true</static>
+    <link name="link">
+      <pose>0 0 0 1.570796327 0 0</pose>
+      <visual name="visual">
+        <geometry>
+          <mesh>
+            <uri>model://spinning_wind_turbine_base/meshes/windmill_base.obj</uri>
+            <scale>1 1 1</scale>
+          </mesh>
+        </geometry>
+      </visual>
+      <!-- <collision name="collision">
+        <geometry>
+          <mesh>
+            <uri>model://spinning_wind_turbine_base/meshes/windmill_base.obj</uri>
+            <scale>1 1 1</scale>
+          </mesh>
+        </geometry>
+      </collision> -->
+    </link>
+  </model>
+</sdf>

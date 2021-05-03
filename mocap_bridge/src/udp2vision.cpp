@@ -15,6 +15,27 @@ using namespace std;
 
 void wellcome_msg();
 
+const vector<string> sensor_names = {"Leica", "CAM0", "CAM1"};
+
+std::string map_status(const bool status, const uint8_t error_code = 0) {
+    stringstream ss;
+    ss << ANSI_BOLD;
+    if(status) {
+        ss << ANSI_COLOR_GREEN << "ON ";
+    }
+    else {
+        if(error_code) {
+            ss << ANSI_COLOR_RED;
+            ss << "E" << std::setfill('0') << std::setw(2) << int(error_code);
+        } else {
+            ss << ANSI_COLOR_RED << "OFF";
+        }
+        
+    }
+    ss << ANSI_COLOR_RESET;
+    return ss.str();
+}
+
 
 int main(int argc, char **argv) {
     wellcome_msg();
@@ -58,7 +79,7 @@ int main(int argc, char **argv) {
 
 
     stringstream ss;
-    ss << "Listening on UDP port " << local_udp_port;
+    ss << "Listening to UDP port " << local_udp_port;
     terminal::INFO(ss.str());
 
     sleep(1);
@@ -67,11 +88,21 @@ int main(int argc, char **argv) {
     ss << "Publishing data to \"" << PUB_VISION_TOPIC_NAME << "\"";
     terminal::INFO(ss.str());
 
+    cout << "---" << endl << "Error codes:" << endl;
+    cout << "E01 - Tracker confidence error." << endl;
+    cout << "E02 - Velocity error." << endl;
+    cout << "E03 - Not finite error." << endl;
+
+
+    cout << "---" << endl << "Vision monitor:" << endl;
+
     while(ros::ok()) {
-        msg_t msg_in = {0};
+        udp_msg_t msg_in = {0};
         ssize_t n = recv(sock, &msg_in, sizeof(msg_in), 0);
         
+        bool ekf_status = false;
         if (n > 0) {
+            ekf_status = true;
             geometry_msgs::PoseStamped msg_out;
 
             msg_out.header.stamp    = ros::Time::now();
@@ -89,6 +120,14 @@ int main(int argc, char **argv) {
             pub_vision.publish(msg_out);
         }
 
+        char s[1000] = {0};
+        sprintf(s, "\r");
+        sprintf(s, "%sEstimator - [%s] ", s, map_status(ekf_status).c_str());
+        for(uint k = 0; k < sensor_names.size(); k++) {
+            sprintf(s, "%s| %s - [%s] ", s, sensor_names[k].c_str(), map_status(msg_in.sensor_status[k], msg_in.error_status[k]).c_str());
+        }
+        write(STDOUT_FILENO, s, sizeof(s));
+        fflush(stdout);
     }
 
     close(sock);
