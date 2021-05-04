@@ -645,6 +645,7 @@ void Mission::start() {
         setFlightMode("AUTO.MISSION");
     } else {
         setFlightMode("AUTO.MISSION");
+        arm(true);
     }
 }
 
