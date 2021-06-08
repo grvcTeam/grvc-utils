@@ -126,13 +126,13 @@ void Mission::constructorFunction() {
 
     if (ros::this_node::getNamespace() == "/") {
         std::string ns_uav_prefix;
-        ros::param::get("~ns_uav_prefix",ns_uav_prefix);
+        ros::param::param<std::string>("~ns_uav_prefix",ns_uav_prefix,"uav_");
         node_name_space_ = "/" + ns_uav_prefix + std::to_string(robot_id_)+"/";
     }
 
     // Init ros communications
     ros::NodeHandle nh;
-    std::string mavros_ns = node_name_space_+"mavros";
+    std::string mavros_ns = "mavros";
     std::string set_mode_srv = mavros_ns + "/set_mode";
     std::string arming_srv = mavros_ns + "/cmd/arming";
     std::string get_param_srv = mavros_ns + "/param/get";
@@ -491,7 +491,7 @@ void Mission::setParam(const std::string& _param_id, int _param_value) {
 void Mission::getAutopilotInformation() {
     // Call vehicle information service
     ros::NodeHandle nh;
-    std::string vehicle_information_string_cl = node_name_space_+"mavros/vehicle_info_get";
+    std::string vehicle_information_string_cl = "mavros/vehicle_info_get";
     ros::ServiceClient vehicle_information_cl = nh.serviceClient<mavros_msgs::VehicleInfoGet>(vehicle_information_string_cl);
     ros::service::waitForService(vehicle_information_string_cl);
     std::this_thread::sleep_for(std::chrono::milliseconds(1000));
@@ -645,7 +645,6 @@ void Mission::start() {
         setFlightMode("AUTO.MISSION");
     } else {
         setFlightMode("AUTO.MISSION");
-        arm(false); 
         arm(true);
     }
 }
@@ -819,7 +818,12 @@ void Mission::addLandWp(const geometry_msgs::PoseStamped& _land_pose, float _abo
     mavros_msgs::Waypoint wp;
     wp = geoPoseStampedtoMavrosWaypoint(usf.back());
     wp.frame = 3;              // FRAME_GLOBAL_REL_ALT
-    wp.command = 21;           // MAV_CMD_NAV_LAND
+    if (airframe_type_==AirframeType::VTOL) {
+        wp.command = 85;           // MAV_CMD_NAV_VTOL_LAND
+    }
+    else {
+        wp.command = 21;           // MAV_CMD_NAV_LAND
+    }
     wp.is_current = false;
     wp.autocontinue = true;
     wp.param1 = _abort_alt;                             // Minimum target altitude if landing is aborted (0 = undefined/use system default).

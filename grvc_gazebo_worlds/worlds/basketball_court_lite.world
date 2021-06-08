@@ -1,0 +1,383 @@
+<?xml version="1.0" ?>
+<sdf version='1.6'>
+  <world name='default'>
+    <physics type='ode'>
+      <!-- Values shoud be step_size = 0.001*F and time_up= 1000/F-->
+      <!-- 
+              F   step_size   real_time   real_time_factor
+              1   0.001       1000        0.4 (controler works)
+              2   0.002        500        0.6 (controler works)
+              3   0.003        333        0.8-0.9 (controler works)
+              4   0.004        250        (controler does not work)
+              5   0.005        200        (controler does not work)
+              6   0.006        166
+              7   0.007        142
+              8   0.008        125
+              9   0.009        111
+              10  0.01         100
+      -->
+      <max_step_size>0.004</max_step_size>
+      <real_time_factor>1</real_time_factor>
+      <real_time_update_rate>250</real_time_update_rate>
+    </physics>
+    <light name='sun' type='directional'>
+      <cast_shadows>1</cast_shadows>
+      <pose frame=''>0 0 100 0 -0 0</pose>
+      <diffuse>0.8 0.8 0.8 1</diffuse>
+      <specular>0.2 0.2 0.2 1</specular>
+      <attenuation>
+        <range>1000</range>
+        <constant>0.9</constant>
+        <linear>0.01</linear>
+        <quadratic>0.001</quadratic>
+      </attenuation>
+      <direction>-0.5 0.1 -0.9</direction>
+    </light>
+
+    <include>
+      <uri>model://basketball_hoop</uri>
+      <name>basketball_hoop_1</name>
+      <pose>9.85613 8.68633 -0.04 1.5708 3e-06 -0.817709</pose>
+    </include>
+
+    <include>
+      <uri>model://basketball_hoop</uri>
+      <name>basketball_hoop_2</name>
+      <pose>-9.425089 -8.900954 -0.040001 1.570796327 0 2.32422</pose>
+    </include>
+
+    <include>
+      <uri>model://basketball_hoop</uri>
+      <name>basketball_hoop_3</name>
+      <pose>7.32608 -11.444163 -0.04 1.570796327 0 -2.38091</pose>
+    </include>
+
+    <include>
+      <uri>model://basketball_hoop</uri>
+      <name>basketball_hoop_4</name>
+      <pose>11.559082 -7.229638 -0.04 1.570796327 0 -2.4077</pose>
+    </include>
+
+    <include>
+      <uri>model://basketball_hoop</uri>
+      <name>basketball_hoop_5</name>
+      <pose>-6.390387 11.759531 -0.04 1.570796327 0 0.747194</pose>
+    </include>
+
+    <include>
+      <uri>model://basketball_hoop</uri>
+      <name>basketball_hoop_6</name>
+      <pose>-10.986398 7.596694 -0.04 1.570796327 0 0.740997</pose>
+    </include>
+
+    <model name='basketball_court'>
+      <static>1</static>
+      <link name='floor'>
+        <collision name='collision'>
+          <geometry>
+            <box>
+              <size>57.5 57.5 0.1</size>
+            </box>
+          </geometry>
+          <max_contacts>10</max_contacts>
+          <surface>
+            <contact>
+              <ode/>
+            </contact>
+            <bounce/>
+            <friction>
+              <torsional>
+                <ode/>
+              </torsional>
+              <ode/>
+            </friction>
+          </surface>
+        </collision>
+        <visual name='visual'>
+          <cast_shadows>0</cast_shadows>
+          <geometry>
+            <box>
+              <size>57.5 57.5 0.1</size>
+            </box>
+          </geometry>
+          <material>
+            <script>
+              <uri>model://basketball_court/materials/scripts</uri>
+              <uri>model://basketball_court/materials/textures</uri>
+              <name>basketball_court</name>
+            </script>
+          </material>
+        </visual>
+        <self_collide>0</self_collide>
+        <kinematic>0</kinematic>
+      </link>
+    </model>
+
+    <state world_name='default'>
+      <sim_time>69 340000000</sim_time>
+      <real_time>54 653765218</real_time>
+      <wall_time>1561646950 865007113</wall_time>
+      <iterations>25098</iterations>
+      <model name='South Lamp Post'>
+        <pose frame=''>-0.232405 -14.6346 0 0 -0 3.14159</pose>
+        <scale>1 1 1</scale>
+        <model name='Lamp Post'>
+          <pose frame=''>-0.232407 -14.6346 0 0 -0 3.14159</pose>
+          <scale>1 1 1</scale>
+          <link name='link'>
+            <pose frame=''>-0.232407 -14.6346 0 0 -0 3.14159</pose>
+            <velocity>0 0 0 0 -0 0</velocity>
+            <acceleration>0 0 0 0 -0 0</acceleration>
+            <wrench>0 0 0 0 -0 0</wrench>
+          </link>
+        </model>
+      </model>
+      <model name='West Lamp Post'>
+        <pose frame=''>-14.5852 0.835438 0 0 -0 1.5708</pose>
+        <scale>1 1 1</scale>
+        <model name='Lamp Post'>
+          <pose frame=''>-14.5852 0.83544 0 0 -0 1.5708</pose>
+          <scale>1 1 1</scale>
+          <link name='link'>
+            <pose frame=''>-14.5852 0.83544 0 0 -0 1.5708</pose>
+            <velocity>0 0 0 0 -0 0</velocity>
+            <acceleration>0 0 0 0 -0 0</acceleration>
+            <wrench>0 0 0 0 -0 0</wrench>
+          </link>
+        </model>
+      </model>
+      <model name='North Lamp Post'>
+        <pose frame=''>0.305297 14.5305 0 0 -0 0</pose>
+        <scale>1 1 1</scale>
+        <model name='Lamp Post'>
+          <pose frame=''>0.305299 14.5305 0 0 -0 0</pose>
+          <scale>1 1 1</scale>
+          <link name='link'>
+            <pose frame=''>0.305299 14.5305 0 0 -0 0</pose>
+            <velocity>0 0 0 0 -0 0</velocity>
+            <acceleration>0 0 0 0 -0 0</acceleration>
+            <wrench>0 0 0 0 -0 0</wrench>
+          </link>
+        </model>
+      </model>
+      <model name='East Lamp Post'>
+        <pose frame=''>14.7302 -0.638499 0 0 0 -1.5708</pose>
+        <scale>1 1 1</scale>
+        <model name='Lamp Post'>
+          <pose frame=''>14.7302 -0.638501 0 0 0 -1.5708</pose>
+          <scale>1 1 1</scale>
+          <link name='link'>
+            <pose frame=''>14.7302 -0.638501 0 0 0 -1.5708</pose>
+            <velocity>0 0 0 0 -0 0</velocity>
+            <acceleration>0 0 0 0 -0 0</acceleration>
+            <wrench>0 0 0 0 -0 0</wrench>
+          </link>
+        </model>
+      </model>
+      <model name='basketball_court'>
+        <pose frame=''>0.4 0 0 0 -0 1.5708</pose>
+        <scale>1 1 1</scale>
+        <link name='floor'>
+          <pose frame=''>0.4 0 0 0 -0 1.5708</pose>
+          <velocity>0 0 0 0 -0 0</velocity>
+          <acceleration>0 0 0 0 -0 0</acceleration>
+          <wrench>0 0 0 0 -0 0</wrench>
+        </link>
+      </model>
+
+      <light name='sun'>
+        <pose frame=''>0 0 100 0 -0 0</pose>
+      </light>
+    </state>
+    <gravity>0 0 -9.8</gravity>
+    <magnetic_field>6e-06 2.3e-05 -4.2e-05</magnetic_field>
+    <atmosphere type='adiabatic'/>
+    <scene>
+      <ambient>0.4 0.4 0.4 1</ambient>
+      <background>0.7 0.7 0.7 1</background>
+      <shadows>1</shadows>
+    </scene>
+    <spherical_coordinates>
+      <surface_model>EARTH_WGS84</surface_model>
+      <latitude_deg>0</latitude_deg>
+      <longitude_deg>0</longitude_deg>
+      <elevation>0</elevation>
+      <heading_deg>0</heading_deg>
+    </spherical_coordinates>
+    <model name='South Lamp Post'>
+      <model name='Lamp Post'>
+        <static>1</static>
+        <link name='link'>
+          <collision name='collision'>
+            <geometry>
+              <mesh>
+                <uri>model://lamp_post/meshes/lamp_post.dae</uri>
+                <scale>1 1 1</scale>
+              </mesh>
+            </geometry>
+            <max_contacts>10</max_contacts>
+            <surface>
+              <contact>
+                <ode/>
+              </contact>
+              <bounce/>
+              <friction>
+                <torsional>
+                  <ode/>
+                </torsional>
+                <ode/>
+              </friction>
+            </surface>
+          </collision>
+          <visual name='visual'>
+            <geometry>
+              <mesh>
+                <uri>model://lamp_post/meshes/lamp_post.dae</uri>
+                <scale>1 1 1</scale>
+              </mesh>
+            </geometry>
+          </visual>
+          <self_collide>0</self_collide>
+          <kinematic>0</kinematic>
+        </link>
+        <pose frame=''>2e-06 0 0 0 -0 0</pose>
+      </model>
+      <static>0</static>
+      <allow_auto_disable>1</allow_auto_disable>
+      <pose frame=''>-7.09667 -3.90756 0 0 -0 0</pose>
+    </model>
+    <model name='North Lamp Post'>
+      <model name='Lamp Post'>
+        <static>1</static>
+        <link name='link'>
+          <collision name='collision'>
+            <geometry>
+              <mesh>
+                <uri>model://lamp_post/meshes/lamp_post.dae</uri>
+                <scale>1 1 1</scale>
+              </mesh>
+            </geometry>
+            <max_contacts>10</max_contacts>
+            <surface>
+              <contact>
+                <ode/>
+              </contact>
+              <bounce/>
+              <friction>
+                <torsional>
+                  <ode/>
+                </torsional>
+                <ode/>
+              </friction>
+            </surface>
+          </collision>
+          <visual name='visual'>
+            <geometry>
+              <mesh>
+                <uri>model://lamp_post/meshes/lamp_post.dae</uri>
+                <scale>1 1 1</scale>
+              </mesh>
+            </geometry>
+          </visual>
+          <self_collide>0</self_collide>
+          <kinematic>0</kinematic>
+        </link>
+        <pose frame=''>2e-06 0 0 0 -0 0</pose>
+      </model>
+      <static>0</static>
+      <allow_auto_disable>1</allow_auto_disable>
+      <pose frame=''>0.305297 14.5305 0 0 -0 0</pose>
+    </model>
+    <model name='East Lamp Post'>
+      <model name='Lamp Post'>
+        <static>1</static>
+        <link name='link'>
+          <collision name='collision'>
+            <geometry>
+              <mesh>
+                <uri>model://lamp_post/meshes/lamp_post.dae</uri>
+                <scale>1 1 1</scale>
+              </mesh>
+            </geometry>
+            <max_contacts>10</max_contacts>
+            <surface>
+              <contact>
+                <ode/>
+              </contact>
+              <bounce/>
+              <friction>
+                <torsional>
+                  <ode/>
+                </torsional>
+                <ode/>
+              </friction>
+            </surface>
+          </collision>
+          <visual name='visual'>
+            <geometry>
+              <mesh>
+                <uri>model://lamp_post/meshes/lamp_post.dae</uri>
+                <scale>1 1 1</scale>
+              </mesh>
+            </geometry>
+          </visual>
+          <self_collide>0</self_collide>
+          <kinematic>0</kinematic>
+        </link>
+        <pose frame=''>2e-06 0 0 0 -0 0</pose>
+      </model>
+      <static>0</static>
+      <allow_auto_disable>1</allow_auto_disable>
+      <pose frame=''>14.7302 -0.638499 0 0 -0 0</pose>
+    </model>
+    <model name='West Lamp Post'>
+      <model name='Lamp Post'>
+        <static>1</static>
+        <link name='link'>
+          <collision name='collision'>
+            <geometry>
+              <mesh>
+                <uri>model://lamp_post/meshes/lamp_post.dae</uri>
+                <scale>1 1 1</scale>
+              </mesh>
+            </geometry>
+            <max_contacts>10</max_contacts>
+            <surface>
+              <contact>
+                <ode/>
+              </contact>
+              <bounce/>
+              <friction>
+                <torsional>
+                  <ode/>
+                </torsional>
+                <ode/>
+              </friction>
+            </surface>
+          </collision>
+          <visual name='visual'>
+            <geometry>
+              <mesh>
+                <uri>model://lamp_post/meshes/lamp_post.dae</uri>
+                <scale>1 1 1</scale>
+              </mesh>
+            </geometry>
+          </visual>
+          <self_collide>0</self_collide>
+          <kinematic>0</kinematic>
+        </link>
+        <pose frame=''>2e-06 0 0 0 -0 0</pose>
+      </model>
+      <static>0</static>
+      <allow_auto_disable>1</allow_auto_disable>
+      <pose frame=''>-14.5852 0.835438 0 0 -0 3.14159</pose>
+    </model>
+    <gui fullscreen='0'>
+      <camera name='user_camera'>
+        <pose frame=''>-16.8007 -6.9204 5.8874 -0 0.305797 0.400181</pose>
+        <view_controller>orbit</view_controller>
+        <projection_type>perspective</projection_type>
+      </camera>
+    </gui>
+  </world>
+</sdf>

@@ -1,7 +1,7 @@
-<?xml version="1.0" ?>
+<?xml version="1.0"?>
 <?xml-model href="http://sdformat.org/schemas/root.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <sdf version="1.5">
-  <world name="default">      
+  <world name="default">
     <!-- coordinate system {-->
     <spherical_coordinates>
       <surface_model>EARTH_WGS84</surface_model>
@@ -40,7 +40,7 @@
     <scene>
       <shadows>false</shadows>
       <sky>
-        <clouds/>
+        <clouds />
       </sky>
     </scene>
     <!--}-->
@@ -62,13 +62,15 @@
     <!--}-->
 
 
-  <!-- You can either use v3 or v4 -->
+    <!-- You can either use v3 or v4 -->
     <include>
       <uri>model://windmill</uri>
       <pose> 0 0 0 0 0 0 </pose>
       <name>windmill</name>
     </include>
-  
-
+    <!-- A ground plane -->
+    <include>
+      <uri>model://ground_plane</uri>
+    </include>
   </world>
 </sdf>
