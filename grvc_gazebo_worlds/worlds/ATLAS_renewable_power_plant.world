@@ -43,7 +43,7 @@
     <!-- World state: rotate (ENU) and center the origin of the simulator -->
     <state world_name='ATLAS_renewable_power_plant_world'>
       <model name='ATLAS_ground'>
-        <pose frame=''>-1485 -965 -0.05 0 0 1.570796327</pose>
+        <pose frame=''>41.05 36.41 -0.05 0 0 1.570796327</pose>
       </model>
     </state>
 
