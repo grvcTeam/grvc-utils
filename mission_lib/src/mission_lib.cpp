@@ -55,19 +55,21 @@ Mission::Mission()
 }
 
 
-Mission::Mission(int _uav_id)
+Mission::Mission(int _uav_id, const std::string& _node_name_space)
     : tf_listener_(tf_buffer_)
 {
     robot_id_ = _uav_id;
+    node_name_space_ = _node_name_space;
     constructorFunction();
 }
 
 
-Mission::Mission(int _uav_id, std::string _pose_frame_id)
+Mission::Mission(int _uav_id, const std::string& _pose_frame_id, const std::string& _node_name_space)
     : tf_listener_(tf_buffer_)
 {
     robot_id_ = _uav_id;
     pose_frame_id_ = _pose_frame_id;
+    node_name_space_ = _node_name_space;
     constructorFunction();
 }
 
@@ -75,6 +77,7 @@ Mission::Mission(int _uav_id, std::string _pose_frame_id)
 Mission::Mission(const Mission& _mission) : tf_listener_(tf_buffer_) {
     robot_id_ = _mission.robot_id_;
     pose_frame_id_ = _mission.pose_frame_id_;
+    node_name_space_ = _mission.node_name_space_;
     constructorFunction();
 }
 
@@ -124,15 +127,9 @@ void Mission::constructorFunction() {
 
     ROS_INFO("Mission_lib constructor with robot id [%d]", robot_id_);
 
-    if (ros::this_node::getNamespace() == "/") {
-        std::string ns_uav_prefix;
-        ros::param::param<std::string>("~ns_uav_prefix",ns_uav_prefix,"uav_");
-        node_name_space_ = "/" + ns_uav_prefix + std::to_string(robot_id_)+"/";
-    }
-
     // Init ros communications
     ros::NodeHandle nh;
-    std::string mavros_ns = "mavros";
+    std::string mavros_ns = node_name_space_+"mavros";
     std::string set_mode_srv = mavros_ns + "/set_mode";
     std::string arming_srv = mavros_ns + "/cmd/arming";
     std::string get_param_srv = mavros_ns + "/param/get";
@@ -195,7 +192,9 @@ void Mission::constructorFunction() {
                 low_battery_warning_ = false;
             } else {
                 active_waypoint_ = _msg->current_seq;
-                // if (!low_battery_warning_ && active_waypoint_>0 && _msg->waypoints[active_waypoint_].command==21) {  // TODO: not really checking the battery (for the experiments).
+
+                // // Low-battery warning. In the end this was not needed for the experiments. Calls a python script that uses Tkinter, but on my Ubuntu machine crashes even with the simplest dialog:
+                // if (!low_battery_warning_ && active_waypoint_>0 && _msg->waypoints[active_waypoint_].command==21) {
                 //     low_battery_warning_ = true;
                 //     std::string bash_commands_to_run_python_script = "file_path_returned_by_command=$(find ~ -name 'low_battery_warning.py' 2>/dev/null); $file_path_returned_by_command "+std::to_string(robot_id_)+" &";
                 //     system(bash_commands_to_run_python_script.c_str());
@@ -239,7 +238,7 @@ void Mission::constructorFunction() {
         exit(EXIT_FAILURE);
     }
 
-    // TODO: Check this and solve frames issue
+    // TODO: Check this and solve frames issue (inherited TODO, maybe already fixed?)
     initHomeFrame();
 
     // Client to get parameters from mavros and required default values
@@ -491,7 +490,7 @@ void Mission::setParam(const std::string& _param_id, int _param_value) {
 void Mission::getAutopilotInformation() {
     // Call vehicle information service
     ros::NodeHandle nh;
-    std::string vehicle_information_string_cl = "mavros/vehicle_info_get";
+    std::string vehicle_information_string_cl = node_name_space_+"mavros/vehicle_info_get";
     ros::ServiceClient vehicle_information_cl = nh.serviceClient<mavros_msgs::VehicleInfoGet>(vehicle_information_string_cl);
     ros::service::waitForService(vehicle_information_string_cl);
     std::this_thread::sleep_for(std::chrono::milliseconds(1000));
@@ -909,7 +908,6 @@ void Mission::print() const {
     std::cout << "waypoints.size() = " << mission_waypointlist_.waypoints.size() << std::endl;
     int i=0;
     for (const mavros_msgs::Waypoint& waypoint : mission_waypointlist_.waypoints) {
-        i++;
         std::cout << std::endl;
         std::cout << "waypoints [ " << i << " ].x_lat = " << waypoint.x_lat << std::endl;
         std::cout << "waypoints [ " << i << " ].y_long = " << waypoint.y_long << std::endl;
@@ -926,6 +924,7 @@ void Mission::print() const {
         std::cout << "waypoints [ " << i << " ].command = " << waypoint.command << std::endl;
         std::cout << "waypoints [ " << i << " ].is_current = " << (bool) waypoint.is_current << std::endl;
         std::cout << "waypoints [ " << i << " ].autocontinue = " << (bool) waypoint.autocontinue << std::endl;
+        i++;
     }
     std::cout << std::endl;
 }
@@ -948,7 +947,6 @@ std::vector<geographic_msgs::GeoPoseStamped> Mission::uniformizeSpatialField( co
             homogen_world_pos.pose.position.longitude = posestamped.pose.position.y;
             homogen_world_pos.pose.position.altitude  = posestamped.pose.position.z;
         } else if ( waypoint_frame_id == "" || waypoint_frame_id == uav_home_frame_id_ ) {
-// TODO (Ángel): THIS WAS AN if, BUT SHOULD BE AN else if LIKE THIS, RIGHT? CHECK. Maybe this solves the other TODO "Check this and solve frames issue".
             // No transform is needed. Passed to global
             homogen_world_pos = poseStampedtoGeoPoseStamped(posestamped);
         } else {

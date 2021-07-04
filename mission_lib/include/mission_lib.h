@@ -52,8 +52,8 @@ class Mission {
 public:
 
     Mission();
-    Mission(int _uav_id);
-    Mission(int _uav_id, std::string _pose_frame_id);
+    Mission(int _uav_id, const std::string& _node_name_space="");
+    Mission(int _uav_id, const std::string& _pose_frame_id, const std::string& _node_name_space);
     Mission(const Mission& _mission);
     Mission& operator=(const Mission& _mission) { return *this; }
     void constructorFunction();
@@ -159,7 +159,7 @@ private:
     tf2_ros::StaticTransformBroadcaster *                  static_tf_broadcaster_;
     std::map<std::string, geometry_msgs::TransformStamped> cached_transforms_;
 
-    std::string node_name_space_;
+    std::string node_name_space_ = "";
 
     std::thread spin_thread_;       // Ros spinning threads for running callbacks
 
