@@ -833,7 +833,7 @@ void Mission::addLandWp(const geometry_msgs::PoseStamped& _land_pose, float _abo
 }
 
 
-void Mission::addLandWp(const geometry_msgs::PoseStamped& _loiter_to_alt_start_landing_pose, const geometry_msgs::PoseStamped& _land_pose, float _loit_radius, float _loit_heading, float _loit_forward_moving, float _abort_alt, float _precision_mode) {
+void Mission::addLandWp(const geometry_msgs::PoseStamped& _loiter_to_alt_start_landing_pose, const geometry_msgs::PoseStamped& _land_pose, float _langing_yaw, float _loit_radius, float _loit_heading, float _loit_forward_moving, float _abort_alt, float _precision_mode) {
 
     if (airframe_type_==AirframeType::MULTICOPTER || airframe_type_==AirframeType::VTOL) {
         ROS_ERROR("Mission lib [%d]: Error in [%d]-th waypoint, _loiter_to_alt_start_landing_pose included in Mission::addLandWp when not needed if your airframe is not a fixed wing. Please review your plan.", robot_id_, (int) mission_waypointlist_.waypoints.size());
@@ -877,9 +877,9 @@ void Mission::addLandWp(const geometry_msgs::PoseStamped& _loiter_to_alt_start_l
     wp3.command = 21;           // MAV_CMD_NAV_LAND
     wp3.is_current = false;
     wp3.autocontinue = true;
-    wp3.param1 = _abort_alt;                             // Minimum target altitude if landing is aborted (0 = undefined/use system default).
-    wp3.param2 = _precision_mode;                        // Precision land mode.
-    wp3.param4 = getYaw(usf.back().pose.orientation);    // Desired yaw angle. NaN to use the current system yaw heading mode (e.g. yaw towards next waypoint, yaw to home, etc.).
+    wp3.param1 = _abort_alt;            // Minimum target altitude if landing is aborted (0 = undefined/use system default).
+    wp3.param2 = _precision_mode;       // Precision land mode.
+    wp3.param4 = _langing_yaw;          // Desired yaw angle (radians). NaN to use the current system yaw heading mode (e.g. yaw towards next waypoint, yaw to home, etc.).
 
     mission_waypointlist_.waypoints.push_back(wp3);
 }

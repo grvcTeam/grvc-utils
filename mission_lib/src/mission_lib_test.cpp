@@ -98,6 +98,7 @@ int main(int _argc, char** _argv) {
     land_pose.pose.position.x = 0;
     land_pose.pose.position.y = 0;
     land_pose.pose.position.z = 0;
+    float langing_yaw = 0;
 
     grvc::Mission mission;
     std::cin.get();         // Wait for user input.
@@ -106,7 +107,7 @@ int main(int _argc, char** _argv) {
     mission.addPassWpList(pass_poses);
     // mission.addLoiterWpList(loiter_poses, 20);
     // mission.addLoiterWpList(loiter_poses);
-    mission.addLandWp(loiter_to_alt_start_landing_pose, land_pose); // For FIXED_WING
+    mission.addLandWp(loiter_to_alt_start_landing_pose, land_pose, langing_yaw); // For FIXED_WING
     // mission.addLandWp(land_pose);                                   // For VTOL and MULTICOPTER
     mission.print();
     mission.start();        // Still no mission pushed, so do nothing.
