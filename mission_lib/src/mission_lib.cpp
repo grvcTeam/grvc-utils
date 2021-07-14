@@ -659,7 +659,9 @@ void Mission::clear() {
 }
 
 
-void Mission::addTakeOffWp(const geometry_msgs::PoseStamped& _takeoff_pose, float _minimum_pitch) {
+void Mission::addTakeOffWp(const geometry_msgs::PoseStamped& _takeoff_pose, float _delay_in_seconds, float _minimum_pitch) {
+
+    std::this_thread::sleep_for(std::chrono::milliseconds((int) _delay_in_seconds*1000));
 
     mavros_msgs::Waypoint wp;
 

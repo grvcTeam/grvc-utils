@@ -90,7 +90,7 @@ public:
     // The only consecuence of this is that pose() will give an output with an offset in z if the initial z of the drone isn't 0 meters. You can solve this issue by uncommenting the "TODO X" in "mission_lib.cpp", but you will have to tune both map_origin_geo[2] and cur_geo_pose_.altitude so that are correct.
 
     // Functions to build, delete, print, push, start and stop the mission:
-    void addTakeOffWp(const geometry_msgs::PoseStamped& _takeoff_pose, float _minimum_pitch=15);    // For FIXED_WING try that the pose is far enough straight to the direction of the plane. For VTOL and MULTICOPTER any point is valid.
+    void addTakeOffWp(const geometry_msgs::PoseStamped& _takeoff_pose, float _delay_in_seconds=0, float _minimum_pitch=15);    // For FIXED_WING try that the pose is far enough straight to the direction of the plane. For VTOL and MULTICOPTER any point is valid.
     void addPassWpList(const std::vector<geometry_msgs::PoseStamped>& _pass_poses, float _speed=-1, float _acceptance_radius=10, float _pass_radius=0);     // Add simple waypoint where the UAV will pass. _speed=-1 for default speed.
     void addLoiterWpList(const std::vector<geometry_msgs::PoseStamped>& _loiter_poses, float _time=-1, float _radius=75, float _speed=-1, float _turns=-1, float _forward_moving=0, float _heading=-1);     // Add loiter waypoint where the UAV will wait or "hold" an amount of time defined by the user. _speed=-1 for default speed.
     void addLandWp(const geometry_msgs::PoseStamped& _land_pose, float _abort_alt=0, float _precision_mode=0);      // Landing for VTOL and MULTICOPTER
