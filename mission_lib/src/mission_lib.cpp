@@ -710,7 +710,7 @@ void Mission::addPassWpList(const std::vector<geometry_msgs::PoseStamped>& _pass
         mavros_msgs::Waypoint wp = geoPoseStampedtoMavrosWaypoint(geoposestamped);
         wp.frame = 3;           // FRAME_GLOBAL_REL_ALT
         wp.command = 16;        // MAV_CMD_NAV_WAYPOINT
-        wp.is_current = false;
+        wp.is_current = mission_waypointlist_.waypoints.size()==0? true : false;
         wp.autocontinue = true;
         wp.param2 = _acceptance_radius;                     // (if the sphere with this radius is hit, the waypoint counts as reached)
         wp.param3 = _pass_radius;                           // 0 to pass through the WP, if > 0 radius to pass by WP. Positive value for clockwise orbit,
@@ -739,7 +739,7 @@ void Mission::addLoiterWpList(const std::vector<geometry_msgs::PoseStamped>& _lo
         mavros_msgs::Waypoint wp;
         wp = geoPoseStampedtoMavrosWaypoint( geoposestamped);
         wp.frame = 3;           // FRAME_GLOBAL_REL_ALT
-        wp.is_current = false;
+        wp.is_current = mission_waypointlist_.waypoints.size()==0? true : false;
         wp.autocontinue = true;
 
         if (airframe_type_==AirframeType::MULTICOPTER) {
@@ -823,7 +823,7 @@ void Mission::addLandWp(const geometry_msgs::PoseStamped& _land_pose, float _abo
     else {
         wp.command = 21;           // MAV_CMD_NAV_LAND
     }
-    wp.is_current = false;
+    wp.is_current = mission_waypointlist_.waypoints.size()==0? true : false;
     wp.autocontinue = true;
     wp.param1 = _abort_alt;                             // Minimum target altitude if landing is aborted (0 = undefined/use system default).
     wp.param2 = _precision_mode;                        // Precision land mode.
@@ -850,7 +850,7 @@ void Mission::addLandWp(const geometry_msgs::PoseStamped& _loiter_to_alt_start_l
     mavros_msgs::Waypoint wp1;
     wp1.frame = 2;              // FRAME_MISSION
     wp1.command = 189;          // MAV_CMD_DO_LAND_START
-    wp1.is_current = false;
+    wp1.is_current = mission_waypointlist_.waypoints.size()==0? true : false;
     wp1.autocontinue = true;
 
     mission_waypointlist_.waypoints.push_back(wp1);
@@ -863,7 +863,7 @@ void Mission::addLandWp(const geometry_msgs::PoseStamped& _loiter_to_alt_start_l
 
     wp2.frame = 3;              // FRAME_GLOBAL_REL_ALT
     wp2.command = 31;           // MAV_CMD_NAV_LOITER_TO_ALT
-    wp2.is_current = false;
+    wp2.is_current = mission_waypointlist_.waypoints.size()==0? true : false;
     wp2.autocontinue = true;
     wp2.param1 = _loit_heading;             // Heading Required. Leave loiter circle only once heading towards the next waypoint (0 = False)
     wp2.param2 = _loit_radius;              // If positive loiter clockwise, negative counter-clockwise, 0 means no change to standard loiter.
@@ -875,7 +875,7 @@ void Mission::addLandWp(const geometry_msgs::PoseStamped& _loiter_to_alt_start_l
     wp3 = geoPoseStampedtoMavrosWaypoint(usf.back());
     wp3.frame = 3;              // FRAME_GLOBAL_REL_ALT
     wp3.command = 21;           // MAV_CMD_NAV_LAND
-    wp3.is_current = false;
+    wp3.is_current = mission_waypointlist_.waypoints.size()==0? true : false;
     wp3.autocontinue = true;
     wp3.param1 = _abort_alt;            // Minimum target altitude if landing is aborted (0 = undefined/use system default).
     wp3.param2 = _precision_mode;       // Precision land mode.
@@ -890,7 +890,7 @@ void Mission::addSpeedWp(float _speed) {
     mavros_msgs::Waypoint wp;
     wp.frame = 2;               // FRAME_MISSION
     wp.command = 178;           // MAV_CMD_DO_CHANGE_SPEED
-    wp.is_current = false;
+    wp.is_current = mission_waypointlist_.waypoints.size()==0? true : false;
     wp.autocontinue = true;
     wp.param1 = 1.0;            // Speed type (0=Airspeed, 1=Ground Speed, 2=Climb Speed, 3=Descent Speed)
     wp.param2 = _speed;         // Speed (-1 indicates no change)
