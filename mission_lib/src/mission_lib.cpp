@@ -637,6 +637,18 @@ bool Mission::pushClear() {
 
 
 void Mission::start() {
+    if (start_thread_.joinable()) {
+        start_thread_.join();
+    }
+
+    start_thread_ = std::thread(&Mission::startThread, this);
+}
+
+
+void Mission::startThread(void) {
+    std::this_thread::sleep_for(std::chrono::milliseconds((int) (takeoff_delay_*1000.0)));
+    takeoff_delay_ = 0;
+
     if (uav_has_empty_mission_) {
         ROS_WARN("Mission lib [%d]: start() called but the UAV doesn't have a mission. Ignoring the start() call.", robot_id_);
     } else if (active_waypoint_ != -1) {
@@ -661,7 +673,7 @@ void Mission::clear() {
 
 void Mission::addTakeOffWp(const geometry_msgs::PoseStamped& _takeoff_pose, float _delay_in_seconds, float _minimum_pitch) {
 
-    std::this_thread::sleep_for(std::chrono::milliseconds((int) _delay_in_seconds*1000));
+    takeoff_delay_ = _delay_in_seconds;
 
     mavros_msgs::Waypoint wp;
 

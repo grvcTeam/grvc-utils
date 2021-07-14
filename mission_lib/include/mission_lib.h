@@ -104,6 +104,7 @@ public:
 
 private:
     void addSpeedWp(float _speed);  // Change the horizontal speed of the UAV. Private because, for the sake of simplicity, it's recommended to change it direcly with addPassWpList and addLoiterWpList.
+    void startThread(void);
 
     void getAutopilotInformation();
     void initHomeFrame();
@@ -162,7 +163,9 @@ private:
     std::string node_name_space_ = "";
 
     std::thread spin_thread_;       // Ros spinning threads for running callbacks
+    std::thread start_thread_;
 
+    float takeoff_delay_ = 0;       // Seconds of delay before starting the mission with a takeoff.
     bool mavros_has_geo_pose_   = false;
     bool uav_has_empty_mission_ = true;
     bool low_battery_warning_;
