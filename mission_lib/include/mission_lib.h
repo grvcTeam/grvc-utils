@@ -24,6 +24,7 @@
 
 #include <ros/ros.h>
 #include <thread>
+#include <atomic>
 #include <vector>
 #include <Eigen/Core>
 #include <tf2_ros/transform_listener.h>
@@ -83,6 +84,9 @@ public:
     // Getter for the uav identifier (may be redundant, but useful for debug):
     int id() const { return robot_id_; };
 
+    // Getter for the size of the mission (number of MAVROS waypoints):
+    int missionSize() const { return mission_waypointlist_.waypoints.size(); };
+
     // Set home or launch site at (0,0,0) in the pose() output:
     bool setHome(bool _set_z);
 
@@ -131,6 +135,7 @@ private:
     bool                        armed_              = false;
     int                         active_waypoint_    = -1;   // seq nr of the currently active waypoint of the mission: waypoints[current_seq].is_current == True. -1 if not running a mission or disarmed.
     int                         robot_id_           = -1;
+    std::atomic<bool>           abort_delay_        = {false};
 
     // Ros Communications:
     ros::ServiceClient flight_mode_client_;

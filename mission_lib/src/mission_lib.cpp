@@ -257,6 +257,11 @@ void Mission::constructorFunction() {
 Mission::~Mission() {
     if (spin_thread_.joinable()) { spin_thread_.join(); }
 
+    abort_delay_ = true;
+    std::this_thread::sleep_for(std::chrono::milliseconds(300));
+    if (start_thread_.joinable()) { start_thread_.join(); }
+    abort_delay_ = false;
+
     if (id_is_unique_) {
         // Remove id from /uav_ids
         std::vector<int> uav_ids;
@@ -618,6 +623,11 @@ bool Mission::push() {
 
 
 bool Mission::pushClear() {
+    abort_delay_ = true;
+    std::this_thread::sleep_for(std::chrono::milliseconds(300));
+    if (start_thread_.joinable()) { start_thread_.join(); }
+    abort_delay_ = false;
+
     mavros_msgs::WaypointClear clear_mission_service;
 
     if (!clear_mission_client_.call(clear_mission_service)) {
@@ -637,16 +647,30 @@ bool Mission::pushClear() {
 
 
 void Mission::start() {
-    if (start_thread_.joinable()) {
-        start_thread_.join();
-    }
+    abort_delay_ = true;
+    std::this_thread::sleep_for(std::chrono::milliseconds(300));
+    if (start_thread_.joinable()) { start_thread_.join(); }
+    abort_delay_ = false;
 
     start_thread_ = std::thread(&Mission::startThread, this);
 }
 
 
 void Mission::startThread(void) {
-    std::this_thread::sleep_for(std::chrono::milliseconds((int) (takeoff_delay_*1000.0)));
+
+    ros::Rate loop_rate(4.0);               // Iterate at 4 Hz, four iterations each second.
+    int counter = takeoff_delay_*4;         // Iterate 4 times for each second of delay.
+    while (!abort_delay_ && counter>0) {    // If new start() is called during wait, stop iterating.
+        if (counter%40==0) {                // Print if multiple of 10 seconds.
+            ROS_INFO("Mission lib [%d]: %d seconds for takeoff.", robot_id_, counter/4);
+        }
+        counter--;
+        loop_rate.sleep();
+    }
+    if (abort_delay_) {
+        abort_delay_ = false;
+        return;
+    }
     takeoff_delay_ = 0;
 
     if (uav_has_empty_mission_) {
