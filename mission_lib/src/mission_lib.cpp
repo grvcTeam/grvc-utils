@@ -984,7 +984,7 @@ std::vector<geographic_msgs::GeoPoseStamped> Mission::uniformizeSpatialField( co
             homogen_world_pos.pose.position.latitude  = posestamped.pose.position.x;
             homogen_world_pos.pose.position.longitude = posestamped.pose.position.y;
             homogen_world_pos.pose.position.altitude  = posestamped.pose.position.z;
-        } else if ( waypoint_frame_id == "" || waypoint_frame_id == uav_home_frame_id_ ) {
+        } else if ( waypoint_frame_id == "map" || waypoint_frame_id == "" || waypoint_frame_id == uav_home_frame_id_ ) {
             // No transform is needed. Passed to global
             homogen_world_pos = poseStampedtoGeoPoseStamped(posestamped);
         } else {
