@@ -7,20 +7,21 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 -->
 <launch>
 
-<arg name="robot_model" default="Pliego_apm_2"/>
-<arg name="model_list" default="[Pliego_apm_2, LineaElectrica, MBZ2]"/>
+<arg name="robot_model" default="FLANDERS"/>
+<arg name="server_ip"   default="192.168.0.130"/>
 
 <include file="$(find ual_backend_mavros)/launch/server.launch"/>
 
 <node name="mocap_client" pkg="vrpn_client_ros" type="vrpn_client_node" output="screen">
   <rosparam subst_value="true">
-      server: tcp://192.168.0.103
+      server: tcp://$(arg server_ip)
       port: 3883
       update_frequency: 100.0
       frame_id: mocap
       use_server_time: false
       broadcast_tf: true
-      trackers: $(arg model_list)
+      trackers:
+      - $(arg robot_model)
     </rosparam>
 </node>
 
