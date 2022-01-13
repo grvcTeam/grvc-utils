@@ -8,14 +8,9 @@
 #include "udp_msg.h"
 #include "terminal.h"
 
-#define PUB_VISION_TOPIC_NAME "/mavros/vision_pose/pose"
-#define LOCAL_UDP_PORT 1234
-
 using namespace std;
 
 void wellcome_msg();
-
-const vector<string> sensor_names = {"Leica", "CAM0", "CAM1"};
 
 std::string map_status(const bool status, const uint8_t error_code = 0) {
     stringstream ss;
@@ -39,22 +34,27 @@ std::string map_status(const bool status, const uint8_t error_code = 0) {
 
 int main(int argc, char **argv) {
     wellcome_msg();
-    ros::init(argc, argv, "udp_2_vision");
+    ros::init(argc, argv, "udp2vision");
     ros::NodeHandle n;
 
-    // Vision publisher
-    ros::Publisher pub_vision  = n.advertise<geometry_msgs::PoseStamped>(PUB_VISION_TOPIC_NAME, 1);
+    string topic;
+    float local_udp_port;
+    vector<string> sensor_names;
 
-    // Gets port
-    uint local_udp_port;
-    cout << "Enter port to listen to: ";
-    cin  >> local_udp_port;
+    // Get params
+    ros::param::param<string>("~topic", topic, "/mavros/vision_pose/pose");
+    ros::param::param<float>("~port", local_udp_port, 1234);
+    ros::param::param<vector<string>>("~sensors", sensor_names, vector<string>({"Leica", "Camera"}));
+
+
+    // Vision publisher
+    ros::Publisher pub_vision  = n.advertise<geometry_msgs::PoseStamped>(topic, 1);
 
 
     // Creates local address structure for receiving data
     struct sockaddr_in local_addr = {0};
     local_addr.sin_family         = AF_INET;
-    local_addr.sin_port           = htons(local_udp_port);
+    local_addr.sin_port           = htons(uint(local_udp_port));
     local_addr.sin_addr.s_addr    = INADDR_ANY;
 
     // Creates a socket
@@ -85,7 +85,7 @@ int main(int argc, char **argv) {
     sleep(1);
 
     ss.str(std::string());
-    ss << "Publishing data to \"" << PUB_VISION_TOPIC_NAME << "\"";
+    ss << "Publishing data to \"" << topic << "\"";
     terminal::INFO(ss.str());
 
     cout << "---" << endl << "Error codes:" << endl;
@@ -132,7 +132,6 @@ int main(int argc, char **argv) {
 
     close(sock);
     cout << endl;
-    terminal::INFO("Ending");
     return 0;
 }
 
