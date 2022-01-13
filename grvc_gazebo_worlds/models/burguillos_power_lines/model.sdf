@@ -1,0 +1,30 @@
+<?xml version="1.0" ?>
+<sdf version="1.5">
+  <model name="burguillos_power_lines">
+    <static>true</static>
+    <link name="floor">
+      <collision name="collision">
+        <geometry>
+          <box>
+            <size>459.08 783.68 .1</size>
+          </box>
+        </geometry>
+      </collision>
+      <visual name="visual">
+        <cast_shadows>false</cast_shadows>
+        <geometry>
+          <box>
+            <size>459.08 783.68 .1</size>
+          </box>
+        </geometry>
+        <material>
+          <script>
+            <uri>model://burguillos_power_lines/materials/scripts</uri>
+            <uri>model://burguillos_power_lines/materials/textures</uri>
+            <name>burguillos_power_lines</name>
+          </script>
+        </material>
+      </visual>
+    </link>
+  </model>
+</sdf>

@@ -1,0 +1,12 @@
+<launch>
+
+    <!-- Launch Gazebo simulation -->
+	<rosparam param="/use_sim_time">true</rosparam>
+    <node pkg="px4_bringup" type="launch_gzworld.py" name="gazebo_world" output="screen"
+    args="-physics=ode -world=$(find grvc_gazebo_worlds)/worlds/burguillos_power_lines.world
+		  -add_model_path=$(find grvc_gazebo_worlds)/models
+		  -description_package=robots_description">
+		<rosparam param="sim_origin">[37.564003804467, -6.003676484441573, 65.36515808105469]</rosparam>  <!-- [lat,lon,alt] -->
+	</node>
+
+</launch>
