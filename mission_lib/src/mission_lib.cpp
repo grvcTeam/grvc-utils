@@ -518,7 +518,7 @@ void Mission::getAutopilotInformation() {
             autopilot_type_ = AutopilotType::PX4;
             break;
         default:
-            ROS_ERROR("Mission lib [%d]: Wrong autopilot type: %s", robot_id_, mavros::utils::to_string((mavlink::minimal::MAV_AUTOPILOT) vehicle_info_srv.response.vehicles[0].autopilot).c_str());
+            ROS_ERROR("Mission lib [%d]: Wrong autopilot type: %s", robot_id_, mavros::utils::to_string((mavlink::common::MAV_AUTOPILOT) vehicle_info_srv.response.vehicles[0].autopilot).c_str());
             exit(0);
     }
 
@@ -585,7 +585,7 @@ void Mission::getAutopilotInformation() {
             airframe_type_ = AirframeType::OTHER;
             break;
         default:
-            ROS_ERROR("Mission lib [%d]: Wrong airframe type: %s", robot_id_, mavros::utils::to_string((mavlink::minimal::MAV_TYPE) vehicle_info_srv.response.vehicles[0].type).c_str());
+            ROS_ERROR("Mission lib [%d]: Wrong airframe type: %s", robot_id_, mavros::utils::to_string((mavlink::common::MAV_TYPE) vehicle_info_srv.response.vehicles[0].type).c_str());
             exit(0);
     }
 
@@ -593,8 +593,8 @@ void Mission::getAutopilotInformation() {
 
     // Autopilot string
     ROS_INFO("Mission lib [%d]: Connected to %s version %s. Type: %s.", robot_id_,
-    mavros::utils::to_string((mavlink::minimal::MAV_AUTOPILOT) vehicle_info_srv.response.vehicles[0].autopilot).c_str(),
-    autopilot_version.c_str(), mavros::utils::to_string((mavlink::minimal::MAV_TYPE) vehicle_info_srv.response.vehicles[0].type).c_str());
+    mavros::utils::to_string((mavlink::common::MAV_AUTOPILOT) vehicle_info_srv.response.vehicles[0].autopilot).c_str(),
+    autopilot_version.c_str(), mavros::utils::to_string((mavlink::common::MAV_TYPE) vehicle_info_srv.response.vehicles[0].type).c_str());
 }
 
 
