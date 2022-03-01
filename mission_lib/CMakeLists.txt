@@ -81,3 +81,7 @@ target_link_libraries(${PROJECT_NAME}_test_node
   ${catkin_LIBRARIES}
   ${PROJECT_NAME}
 )
+
+add_executable(geographic_to_cartesian src/geographic_to_cartesian.cpp)
+add_dependencies(geographic_to_cartesian ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(geographic_to_cartesian ${catkin_LIBRARIES} ${PROJECT_NAME})
