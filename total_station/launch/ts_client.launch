@@ -1,0 +1,13 @@
+<launch>
+    <arg name="topic_name"     default="leica/pose"/>
+    <arg name="ts_server_ip"   default="192.168.0.188"/>
+    <arg name="ts_server_port" default="8000"/>
+
+
+    <node name="totalStationClientNode" pkg="total_station" type="ts_client_node" output="screen">
+        <param name="topic_name"       type="str"   value="$(arg topic_name)"/>  
+        <param name="ts_server_ip"     type="str"   value="$(arg ts_server_ip)"/>
+        <param name="ts_server_port"   type="int"   value="$(arg ts_server_port)"/>
+    </node>
+
+</launch>
